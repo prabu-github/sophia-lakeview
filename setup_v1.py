@@ -66,9 +66,10 @@ orig_to_comp = [('IC', 'ic'),
                 ('CF_PC', 'cfpc'),
                 ('PC:chl', 'pcchl')]
 for (o, c) in orig_to_comp:
-    orig_cols = ['sampleID'] + orig_wave_cols + [o]
-    comp_cols = ['sample_id'] + comp_wave_cols + [c]
+    orig_cols = ['sampleID'] + [o] + orig_wave_cols 
+    comp_cols = ['sample_id'] + ['y_true'] + comp_wave_cols
     comp_df = orig_df[orig_cols].dropna()
+    comp_df.columns = comp_cols
     comp_csv = compatible_dir/f'{c}.csv'
     comp_df.to_csv(comp_csv, index=None)
     print(f'Saved: {comp_csv.name} ({comp_df.shape})') 
