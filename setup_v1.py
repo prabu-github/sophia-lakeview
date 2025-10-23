@@ -165,6 +165,13 @@ for (train_csv, transform_json) in product(train_csvs, transform_jsons):
         json.dump(train_config, writer)
     print(f'Created: {config_json.stem} ({n_train_configs})')
     n_train_configs += 1
+
+train_configs = [] 
+for j in config_dir.glob('TRAIN__*.json'):
+    train_configs.append(str(Path('io/config')/j.name))
+train_configs.sort()
+with open(Path('../CHTC/sophia-lakeview_v1_train_configs.txt').resolve(), 'w') as writer:
+    writer.write('\n'.join(train_configs))
     
 print('Created train configs. \n')
 
