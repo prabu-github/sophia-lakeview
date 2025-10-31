@@ -18,6 +18,7 @@ seed = 2147483647
 
 
 if __name__ == '__main__':
+    print('Setting up ...')
     parser = argparse.ArgumentParser('sophia-lakeview: setup')
     parser.add_argument('--model_type', action='store', type=str, default='plsr')
     parser.add_argument('--model_select', action='store', type=str, default='median-min')
@@ -55,7 +56,8 @@ if __name__ == '__main__':
     
     
     ##### Compatible CSVs
-    csv_file = original_dir/'LakeViewDF.csv'
+    csv_file = original_dir/'LakeViewDF_v2.csv'
+    print(f'--- Loading {csv_file} ...')
     orig_df = pd.read_csv(csv_file)
     
     orig_wave_cols, comp_wave_cols = [], []
@@ -86,9 +88,12 @@ if __name__ == '__main__':
         comp_cols = ['sample_id'] + ['y_true'] + comp_wave_cols
         comp_df = orig_df[orig_cols].dropna()
         comp_df.columns = comp_cols
+        comp_df = comp_df[comp_df['y_true'] > 0] # no negative trait values!
+
         comp_csv = compatible_dir/f'{c}.csv'
         comp_df.to_csv(comp_csv, index=None) 
-    print(f'Created compatible CSVs. ({len(orig_to_comp)})\n')
+        print(f'------ Compatibalized: {comp_csv.stem} ({comp_df.shape}).')
+    print(f'--- Created compatible CSVs. ({len(orig_to_comp)})')
     
     ##### Transforms
     transforms = {'400-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
@@ -143,7 +148,7 @@ if __name__ == '__main__':
                                       H.UnitVectorize()],}
     for (k, t) in transforms.items():
         H.save_transforms(transforms=t, transforms_file=transform_dir/f'{k}.json') 
-    print('Created transforms.\n')
+    print('--- Created transforms.')
     
     ##### Metrics
     metrics = [H.R2(),
@@ -151,7 +156,7 @@ if __name__ == '__main__':
                H.InterquartileNormalizedRMSE(),
                H.RMSE()]
     H.save_metrics(metrics=metrics, metrics_file=metric_dir/'r2-rnrmse-inrmse-rmse.json') 
-    print('Created metrics. \n')
+    print('--- Created metrics.')
     
     
     ##### Colors
@@ -159,7 +164,7 @@ if __name__ == '__main__':
     color_df = DataFrame({'sample_id': sids,
                           'color': '#CC99CC'})
     color_df.to_csv(color_dir/'same-color.csv', index=None)
-    print('Created colors. \n')
+    print('--- Created colors.')
     
     
     ##### Train config
@@ -192,7 +197,7 @@ if __name__ == '__main__':
         with open(config_json, 'w') as writer:
             json.dump(train_config, writer)
         n_train_configs += 1
-    print(f'Created train configs ({n_train_configs}). \n')
+    print(f'--- Created train configs ({n_train_configs}).')
     
     ##### Deploy config
     if args['internal_deploy']:
@@ -220,11 +225,11 @@ if __name__ == '__main__':
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1
-        print(f'Created internal deploy configs ({n_deploy_configs}). \n')
+        print(f'--- Created internal deploy configs ({n_deploy_configs}).')
 
     if args['external_deploy']:
         n_deploy_configs = 0
-        print(f'Created external deploy configs ({n_deploy_configs}). \n')
+        print(f'--- Created external deploy configs ({n_deploy_configs}).')
 
     if args['cleanup']:
         if compatible_dir.exists():
