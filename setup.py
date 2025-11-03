@@ -50,9 +50,17 @@ if __name__ == '__main__':
     
     config_dir = io_dir/'config'
     config_dir.mkdir(parents=True, exist_ok=True)
+    train_config_dir = config_dir/'train'
+    ideploy_config_dir = config_dir/'ideploy'
+    edeploy_config_dir = config_dir/'edeploy'
+    train_config_dir.mkdir(parents=True, exist_ok=True)
+    ideploy_config_dir.mkdir(parents=True, exist_ok=True)
+    edeploy_config_dir.mkdir(parents=True, exist_ok=True)
     
     model_dir = io_dir/'model'
     deploy_dir = io_dir/'deploy'
+    ideploy_dir = deploy_dir/'ideploy'
+    edeploy_dir = deploy_dir/'edeploy'
     
     
     ##### Compatible CSVs
@@ -96,26 +104,7 @@ if __name__ == '__main__':
     print(f'--- Created compatible CSVs. ({len(orig_to_comp)})')
     
     ##### Transforms
-    transforms = {'400-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()],
-                  '410-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(409.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()],
-                  '420-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(419.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()],
-                  '430-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(429.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()],
-                  '440-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(439.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()], 
-                  '450-800-clip-uv': [H.KeepWavelengths(keep_ranges=[(449.99, 800.01)]),
-                                      H.Clip(low=0.0),
-                                      H.UnitVectorize()],
-    
-                  '400-800-asis-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
+    transforms = {'400-800-asis-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
                                       H.UnitVectorize()],
                   '410-800-asis-uv': [H.KeepWavelengths(keep_ranges=[(409.99, 800.01)]),
                                       H.UnitVectorize()],
@@ -193,7 +182,7 @@ if __name__ == '__main__':
                         'reduce': 'mean',
                         'transform_json': str(transform_json)}
         
-        config_json = config_dir/f'TRAIN__{model_name}.json'
+        config_json = train_config_dir/f'TRAIN__{model_name}.json'
         with open(config_json, 'w') as writer:
             json.dump(train_config, writer)
         n_train_configs += 1
@@ -204,7 +193,7 @@ if __name__ == '__main__':
         n_deploy_configs = 0
         for (train_csv, transform_json) in product(train_csvs, transform_jsons):
             model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_json.stem}__{train_csv.stem}-avg'
-            with open(config_dir/f'TRAIN__{model_name}.json', 'r') as reader:
+            with open(train_config_dir/f'TRAIN__{model_name}.json', 'r') as reader:
                 train_config = json.load(reader) 
         
             # internal eval
@@ -212,7 +201,7 @@ if __name__ == '__main__':
             deploy_other_cols = []
             deploy_split_label = 'TEST'
             deploy_name = f'{model_name}__{deploy_split_label}-{deploy_csv.stem}'
-            deploy_config = {'deploy_dir': str(deploy_dir/deploy_name),
+            deploy_config = {'deploy_dir': str(ideploy_dir/deploy_name),
                              'deploy_csv': str(deploy_csv),
                              'deploy_other_cols': deploy_other_cols,
                              'deploy_subsample': -1,
@@ -221,7 +210,7 @@ if __name__ == '__main__':
                              'color_csv': str(color_dir/'same-color.csv'),
                              'metric_json': str(metric_dir/'r2-rnrmse-inrmse-rmse.json')} 
             deploy_config.update(train_config)
-            config_json = config_dir/f'DEPLOY__{deploy_name}.json'
+            config_json = ideploy_config_dir/f'IDEPLOY__{deploy_name}.json'
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1

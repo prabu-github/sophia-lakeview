@@ -16,14 +16,14 @@ np.set_printoptions(precision=8)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('sophia-lakeview: train')
+    parser = argparse.ArgumentParser('sophia-lakeview: ideploy')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--config_idx', action='store', type=int)
     group.add_argument('--config_json', action='store', type=str)
     args = parser.parse_args().__dict__
 
-    train_configs_dir = Path(__file__).parent/'io/config/train'
-    config_jsons = [f for f in train_configs_dir.glob('TRAIN*.json')]
+    ideploy_configs_dir = Path(__file__).parent/'io/config/ideploy'
+    config_jsons = [f for f in ideploy_configs_dir.glob('IDEPLOY*.json')]
     config_jsons.sort()
 
     if args['config_idx'] is not None:
@@ -32,14 +32,14 @@ if __name__ == '__main__':
         config_json = config_jsons[args['config_idx']]
         
     if args['config_json'] is not None:
-        if not (train_configs_dir/args['config_json']).exists():
+        if not (ideploy_configs_dir/args['config_json']).exists():
             raise Exception(f'Invalid {str(args["config_json"]) = }.')
-        config_json = train_configs_dir/args['config_json'] 
+        config_json = ideploy_configs_dir/args['config_json'] 
 
     if args['config_idx'] is not None:
-        print(f'Training: {config_json.name} ({args["config_idx"]}) ...')
+        print(f'iDeploying: {config_json.name} ({args["config_idx"]}) ...')
     else:
-        print(f'Training: {config_json.name} ...')
+        print(f'iDeploying: {config_json.name} ...')
         
-    TRAINER = H.TraitTrainer()
-    TRAINER(param_json=config_json) 
+    DEPLOYER = H.TraitDeployerCSV()
+    DEPLOYER(param_json=config_json)
