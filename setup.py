@@ -13,6 +13,7 @@ hytraits_path = (Path(__file__).parent.parent/'hytraits').resolve()
 if str(hytraits_path) not in sys.path:
     sys.path.append(str(hytraits_path))
 import hytraits as H 
+from paths import get_paths
 
 seed = 2147483647 
 
@@ -27,44 +28,17 @@ if __name__ == '__main__':
     parser.add_argument('--n_inners', action='store', type=int, default=50)
     parser.add_argument('--test_percent', action='store', type=int, default=15)
     parser.add_argument('--valid_percent', action='store', type=int, default=15)
-    parser.add_argument('--internal_deploy', action='store_true', default=False)
-    parser.add_argument('--external_deploy', action='store_true', default=False)
+    parser.add_argument('--ideploy', action='store_true', default=False)
+    parser.add_argument('--edeploy', action='store_true', default=False)
     parser.add_argument('--cleanup', action='store_true', default=False)
     args = parser.parse_args().__dict__
 
-    
-    io_dir = Path(__file__).parent/'io'
-    data_dir = io_dir/'data'
-    original_dir = data_dir/'original'
-    compatible_dir = data_dir/'compatible'
-    compatible_dir.mkdir(parents=True, exist_ok=True)
+    paths = get_paths()
+    for p in paths.values():
+        p.mkdir(parents=True, exist_ok=True)
 
-    transform_dir = io_dir/'transform'
-    transform_dir.mkdir(parents=True, exist_ok=True)
-    
-    metric_dir = io_dir/'metric'
-    metric_dir.mkdir(parents=True, exist_ok=True) 
-    
-    color_dir = io_dir/'color'
-    color_dir.mkdir(parents=True, exist_ok=True)
-    
-    config_dir = io_dir/'config'
-    config_dir.mkdir(parents=True, exist_ok=True)
-    train_config_dir = config_dir/'train'
-    ideploy_config_dir = config_dir/'ideploy'
-    edeploy_config_dir = config_dir/'edeploy'
-    train_config_dir.mkdir(parents=True, exist_ok=True)
-    ideploy_config_dir.mkdir(parents=True, exist_ok=True)
-    edeploy_config_dir.mkdir(parents=True, exist_ok=True)
-    
-    model_dir = io_dir/'model'
-    deploy_dir = io_dir/'deploy'
-    ideploy_dir = deploy_dir/'ideploy'
-    edeploy_dir = deploy_dir/'edeploy'
-    
-    
     ##### Compatible CSVs
-    csv_file = original_dir/'LakeViewDF_v2.csv'
+    csv_file = paths['original']/'LakeViewDF_v2.csv'
     print(f'--- Loading {csv_file} ...')
     orig_df = pd.read_csv(csv_file)
     
@@ -98,7 +72,7 @@ if __name__ == '__main__':
         comp_df.columns = comp_cols
         comp_df = comp_df[comp_df['y_true'] > 0] # no negative trait values!
 
-        comp_csv = compatible_dir/f'{c}.csv'
+        comp_csv = paths['compatible']/f'{c}.csv'
         comp_df.to_csv(comp_csv, index=None) 
         print(f'------ Compatibalized: {comp_csv.stem} ({comp_df.shape}).')
     print(f'--- Created compatible CSVs. ({len(orig_to_comp)})')
@@ -135,16 +109,18 @@ if __name__ == '__main__':
                   '450-800-move-uv': [H.KeepWavelengths(keep_ranges=[(449.99, 800.01)]),
                                       H.Offset(),
                                       H.UnitVectorize()],}
+    n_transform_configs = 0
     for (k, t) in transforms.items():
-        H.save_transforms(transforms=t, transforms_file=transform_dir/f'{k}.json') 
-    print('--- Created transforms.')
+        H.save_transforms(transforms=t, transforms_file=paths['config']/f'TRANSFORM__{k}.json') 
+        n_transform_configs += 1
+    print(f'--- Created transforms ({n_transform_configs}).')
     
     ##### Metrics
     metrics = [H.R2(),
                H.RangeNormalizedRMSE(),
                H.InterquartileNormalizedRMSE(),
                H.RMSE()]
-    H.save_metrics(metrics=metrics, metrics_file=metric_dir/'r2-rnrmse-inrmse-rmse.json') 
+    H.save_metrics(metrics=metrics, metrics_file=paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json') 
     print('--- Created metrics.')
     
     
@@ -152,21 +128,22 @@ if __name__ == '__main__':
     sids = sorted(list(set(orig_df['sampleID'].values.tolist())))
     color_df = DataFrame({'sample_id': sids,
                           'color': '#CC99CC'})
-    color_df.to_csv(color_dir/'same-color.csv', index=None)
+    color_df.to_csv(paths['config']/'COLOR__default.csv', index=None)
     print('--- Created colors.')
     
     
     ##### Train config
-    train_csvs = sorted([f for f in compatible_dir.glob('*.csv')])
-    transform_jsons = sorted([f for f in transform_dir.glob('*.json')])
+    train_csvs = sorted([f for f in paths['compatible'].glob('*.csv')])
+    transform_jsons = sorted([f for f in paths['config'].glob('TRANSFORM__*.json')])
 
     n_train_configs = 0
     for (train_csv, transform_json) in product(train_csvs, transform_jsons):
-        model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_json.stem}__{train_csv.stem}-avg'
+        transform_key = transform_json.stem.split('__')[1]
+        model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_key}__{train_csv.stem}-avg'
         train_config = {'seed': seed,
                         'model_name': model_name,
                         'model_type': args['model_type'],
-                        'model_dir': str(model_dir/model_name),
+                        'model_dir': str(paths['model']/model_name),
                         'model_selection': args['model_select'],
                         'n_components': args['n_components'],
                         
@@ -182,18 +159,19 @@ if __name__ == '__main__':
                         'reduce': 'mean',
                         'transform_json': str(transform_json)}
         
-        config_json = train_config_dir/f'TRAIN__{model_name}.json'
+        config_json = paths['config']/f'TRAIN__{model_name}.json'
         with open(config_json, 'w') as writer:
             json.dump(train_config, writer)
         n_train_configs += 1
     print(f'--- Created train configs ({n_train_configs}).')
     
-    ##### Deploy config
-    if args['internal_deploy']:
+    ##### Internal deploy config
+    if args['ideploy']:
         n_deploy_configs = 0
         for (train_csv, transform_json) in product(train_csvs, transform_jsons):
-            model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_json.stem}__{train_csv.stem}-avg'
-            with open(train_config_dir/f'TRAIN__{model_name}.json', 'r') as reader:
+            transform_key = transform_json.stem.split('__')[1]
+            model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_key}__{train_csv.stem}-avg'
+            with open(paths['config']/f'TRAIN__{model_name}.json', 'r') as reader:
                 train_config = json.load(reader) 
         
             # internal eval
@@ -201,37 +179,53 @@ if __name__ == '__main__':
             deploy_other_cols = []
             deploy_split_label = 'TEST'
             deploy_name = f'{model_name}__{deploy_split_label}-{deploy_csv.stem}'
-            deploy_config = {'deploy_dir': str(ideploy_dir/deploy_name),
+            deploy_config = {'deploy_dir': str(paths['ideploy']/deploy_name),
                              'deploy_csv': str(deploy_csv),
                              'deploy_other_cols': deploy_other_cols,
                              'deploy_subsample': -1,
                              'deploy_reduce': 'mean',
                              'deploy_split_label': deploy_split_label, 
-                             'color_csv': str(color_dir/'same-color.csv'),
-                             'metric_json': str(metric_dir/'r2-rnrmse-inrmse-rmse.json')} 
+                             'color_csv': str(paths['config']/'COLOR__default.csv'),
+                             'metric_json': str(paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json')} 
             deploy_config.update(train_config)
-            config_json = ideploy_config_dir/f'IDEPLOY__{deploy_name}.json'
+            config_json = paths['config']/f'IDEPLOY__{deploy_name}.json'
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1
         print(f'--- Created internal deploy configs ({n_deploy_configs}).')
 
-    if args['external_deploy']:
+    ##### External deploy config
+    if args['edeploy']:
+        # this is only for testing purposes for now!!
         n_deploy_configs = 0
-        print(f'--- Created external deploy configs ({n_deploy_configs}).')
+        for (train_csv, transform_json) in product(train_csvs, transform_jsons):
+            transform_key = transform_json.stem.split('__')[1]
+            model_name = f'{args["model_type"]}__{args["model_select"]}__{transform_key}__{train_csv.stem}-avg'
+            with open(paths['config']/f'TRAIN__{model_name}.json', 'r') as reader:
+                train_config = json.load(reader) 
+        
+            # internal eval
+            deploy_csv = Path(train_config['train_csv'])
+            deploy_other_cols = []
+            deploy_split_label = 'TEST'
+            deploy_name = f'{model_name}__{deploy_split_label}-{deploy_csv.stem}'
+            deploy_config = {'deploy_dir': str(paths['edeploy']/deploy_name),
+                             'deploy_csv': str(deploy_csv),
+                             'deploy_other_cols': deploy_other_cols,
+                             'deploy_subsample': -1,
+                             'deploy_reduce': 'mean',
+                             'deploy_split_label': deploy_split_label, 
+                             'color_csv': str(paths['config']/'COLOR__default.csv'),
+                             'metric_json': str(paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json')} 
+            deploy_config.update(train_config)
+            config_json = paths['config']/f'EDEPLOY__{deploy_name}.json'
+            with open(config_json, 'w') as writer:
+                json.dump(deploy_config, writer)
+            n_deploy_configs += 1
+        print(f'--- Created enternal deploy configs ({n_deploy_configs}).')
 
+    # clean up for debugging - run before packaging for CHTC.
     if args['cleanup']:
-        if compatible_dir.exists():
-            shutil.rmtree(str(compatible_dir))
-        if transform_dir.exists():
-            shutil.rmtree(str(transform_dir))
-        if metric_dir.exists():
-            shutil.rmtree(str(metric_dir))
-        if color_dir.exists():
-            shutil.rmtree(str(color_dir))
-        if config_dir.exists():
-            shutil.rmtree(str(config_dir))
-        if model_dir.exists():
-            shutil.rmtree(str(model_dir))
-        if deploy_dir.exists():
-            shutil.rmtree(str(deploy_dir))
+        for d in paths.values():
+            if d.stem != 'original':
+                shutil.rmtree(str(d))

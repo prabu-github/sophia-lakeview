@@ -23,7 +23,7 @@ def get_deploy_files(train_config_file: Path,
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('sophia-lakeview: train')
+    parser = argparse.ArgumentParser('sophia-lakeview: traitmodeling')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--train_config_idx', action='store', type=int)
     group.add_argument('--train_config_json', action='store', type=str)
