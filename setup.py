@@ -126,9 +126,10 @@ if __name__ == '__main__':
     
     ##### Colors
     sids = sorted(list(set(orig_df['sampleID'].values.tolist())))
-    color_df = DataFrame({'sample_id': sids,
-                          'color': '#CC99CC'})
-    color_df.to_csv(paths['config']/'COLOR__default.csv', index=None)
+    colors = ['#CC99CC']*len(sids)
+    colors_dict = {s: c for (s, c) in zip(sids, colors)}
+    with open(paths['config']/'COLOR__default.json', 'w') as writer:
+        json.dump(colors_dict, writer, indent=4)
     print('--- Created colors.')
     
     
@@ -185,7 +186,7 @@ if __name__ == '__main__':
                              'deploy_subsample': -1,
                              'deploy_reduce': 'mean',
                              'deploy_split_label': deploy_split_label, 
-                             'color_csv': str(paths['config']/'COLOR__default.csv'),
+                             'color_json': str(paths['config']/'COLOR__default.json'),
                              'metric_json': str(paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json')} 
             deploy_config.update(train_config)
             config_json = paths['config']/f'IDEPLOY__{deploy_name}.json'
@@ -215,14 +216,14 @@ if __name__ == '__main__':
                              'deploy_subsample': -1,
                              'deploy_reduce': 'mean',
                              'deploy_split_label': deploy_split_label, 
-                             'color_csv': str(paths['config']/'COLOR__default.csv'),
+                             'color_json': str(paths['config']/'COLOR__default.json'),
                              'metric_json': str(paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json')} 
             deploy_config.update(train_config)
             config_json = paths['config']/f'EDEPLOY__{deploy_name}.json'
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1
-        print(f'--- Created enternal deploy configs ({n_deploy_configs}).')
+        print(f'--- Created external deploy configs ({n_deploy_configs}).')
 
     # clean up for debugging - run before packaging for CHTC.
     if args['cleanup']:
