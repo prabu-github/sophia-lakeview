@@ -19,7 +19,6 @@ seed = 2147483647
 
 
 if __name__ == '__main__':
-    print('Setting up ...')
     parser = argparse.ArgumentParser('sophia-lakeview: setup')
     parser.add_argument('--model_type', action='store', type=str, default='plsr')
     parser.add_argument('--model_select', action='store', type=str, default='median-min')
@@ -31,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--ideploy', action='store_true', default=False)
     parser.add_argument('--edeploy', action='store_true', default=False)
     parser.add_argument('--cleanup', action='store_true', default=False)
+    parser.add_argument('--verbose', action='store_true', default=False)
     args = parser.parse_args().__dict__
 
     paths = get_paths()
@@ -39,7 +39,8 @@ if __name__ == '__main__':
 
     ##### Compatible CSVs
     csv_file = paths['original']/'LakeViewDF_v2.csv'
-    print(f'--- Loading {csv_file} ...')
+    if args['verbose']:
+        print(f'--- Loading {csv_file} ...')
     orig_df = pd.read_csv(csv_file)
     
     orig_wave_cols, comp_wave_cols = [], []
@@ -73,9 +74,11 @@ if __name__ == '__main__':
         comp_df = comp_df[comp_df['y_true'] > 0] # no negative trait values!
 
         comp_csv = paths['compatible']/f'{c}.csv'
-        comp_df.to_csv(comp_csv, index=None) 
-        print(f'------ Compatibalized: {comp_csv.stem} ({comp_df.shape}).')
-    print(f'--- Created compatible CSVs. ({len(orig_to_comp)})')
+        comp_df.to_csv(comp_csv, index=None)
+        if args['verbose']:
+            print(f'------ Compatibalized: {comp_csv.stem} ({comp_df.shape}).')
+    if args['verbose']:
+        print(f'--- Created compatible CSVs. ({len(orig_to_comp)})')
     
     ##### Transforms
     transforms = {'400-800-asis-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
@@ -92,28 +95,29 @@ if __name__ == '__main__':
                                       H.UnitVectorize()],
                  
                   '400-800-move-uv': [H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()],
                   '410-800-move-uv': [H.KeepWavelengths(keep_ranges=[(409.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()],
                   '420-800-move-uv': [H.KeepWavelengths(keep_ranges=[(419.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()],
                   '430-800-move-uv': [H.KeepWavelengths(keep_ranges=[(429.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()],
                   '440-800-move-uv': [H.KeepWavelengths(keep_ranges=[(439.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()], 
                   '450-800-move-uv': [H.KeepWavelengths(keep_ranges=[(449.99, 800.01)]),
-                                      H.Offset(),
+                                      H.CommonMinReflectance(),
                                       H.UnitVectorize()],}
     n_transform_configs = 0
     for (k, t) in transforms.items():
         H.save_transforms(transforms=t, transforms_file=paths['config']/f'TRANSFORM__{k}.json') 
         n_transform_configs += 1
-    print(f'--- Created transforms ({n_transform_configs}).')
+    if args['verbose']:
+        print(f'--- Created transforms ({n_transform_configs}).')
     
     ##### Metrics
     metrics = [H.R2(),
@@ -121,7 +125,8 @@ if __name__ == '__main__':
                H.InterquartileNormalizedRMSE(),
                H.RMSE()]
     H.save_metrics(metrics=metrics, metrics_file=paths['config']/'METRIC__r2-rnrmse-inrmse-rmse.json') 
-    print('--- Created metrics.')
+    if args['verbose']:
+        print('--- Created metrics.')
     
     
     ##### Colors
@@ -130,7 +135,8 @@ if __name__ == '__main__':
     colors_dict = {s: c for (s, c) in zip(sids, colors)}
     with open(paths['config']/'COLOR__default.json', 'w') as writer:
         json.dump(colors_dict, writer, indent=4)
-    print('--- Created colors.')
+    if args['verbose']:
+        print('--- Created colors.')
     
     
     ##### Train config
@@ -164,7 +170,8 @@ if __name__ == '__main__':
         with open(config_json, 'w') as writer:
             json.dump(train_config, writer)
         n_train_configs += 1
-    print(f'--- Created train configs ({n_train_configs}).')
+    if args['verbose']:
+        print(f'--- Created train configs ({n_train_configs}).')
     
     ##### Internal deploy config
     if args['ideploy']:
@@ -193,7 +200,8 @@ if __name__ == '__main__':
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1
-        print(f'--- Created internal deploy configs ({n_deploy_configs}).')
+        if args['verbose']:
+            print(f'--- Created internal deploy configs ({n_deploy_configs}).')
 
     ##### External deploy config
     if args['edeploy']:
@@ -223,7 +231,8 @@ if __name__ == '__main__':
             with open(config_json, 'w') as writer:
                 json.dump(deploy_config, writer)
             n_deploy_configs += 1
-        print(f'--- Created external deploy configs ({n_deploy_configs}).')
+        if args['verbose']:
+            print(f'--- Created external deploy configs ({n_deploy_configs}).')
 
     # clean up for debugging - run before packaging for CHTC.
     if args['cleanup']:

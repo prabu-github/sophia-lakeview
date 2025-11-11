@@ -30,6 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--train', action='store_true', default=False)
     parser.add_argument('--ideploy', action='store_true', default=False)
     parser.add_argument('--edeploy', action='store_true', default=False)
+    parser.add_argument('--verbose', action='store_true', default=False)
     args = parser.parse_args().__dict__
 
     paths = get_paths()
@@ -50,30 +51,27 @@ if __name__ == '__main__':
     # Training
     if args['train']:
         if args['train_config_idx'] is not None:
-            print(f'Training: {train_config_file.name} ({args["train_config_idx"]}) ...')
+            print(f'====== Training: {train_config_file.name} ({args["train_config_idx"]}) ...')
         else:
-            print(f'Training: {train_config_file.name} ...')
+            print(f'====== Training: {train_config_file.name} ...')
         
         TRAINER = H.TraitTrainer()
         TRAINER(config_json=train_config_file)
-        print()
         
     # Internal deployment
     if args['ideploy']:
         deploy_config_files = get_deploy_files(train_config_file=train_config_file, 
                                                deploy_prefix='IDEPLOY')
         for deploy_config_file in deploy_config_files:
-            print(f'iDeploying: {deploy_config_file.name} ...')
+            print(f'====== iDeploying: {deploy_config_file.name} ...')
             DEPLOYER = H.TraitDeployerCSV()
             DEPLOYER(config_json=deploy_config_file)
-        print()
             
     # External deployment:
     if args['edeploy']:
         deploy_config_files = get_deploy_files(train_config_file=train_config_file, 
                                                deploy_prefix='EDEPLOY')
         for deploy_config_file in deploy_config_files:
-            print(f'eDeploying: {deploy_config_file.name} ...')
+            print(f'====== eDeploying: {deploy_config_file.name} ...')
             DEPLOYER = H.TraitDeployerCSV()
             DEPLOYER(config_json=deploy_config_file)
-        print()
