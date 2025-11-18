@@ -1,11 +1,7 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-import numpy as np
-import pandas as pd
-from pandas import DataFrame
 from pprint import pprint
-import time
 import argparse
 
 hytraits_path = (Path(__file__).parent.parent/'hytraits').resolve()
@@ -34,9 +30,9 @@ if __name__ == '__main__':
     args = parser.parse_args().__dict__
 
     paths = get_paths()
+
     train_config_jsons = [f for f in paths['config'].glob('TRAIN__*.json')]
     train_config_jsons.sort()
-
     if args['train_config_idx'] is not None:
         if (args['train_config_idx'] < 0) or (args['train_config_idx'] > len(train_config_jsons)):
             raise Exception(f'Invalid {args["train_config_idx"] = }.')

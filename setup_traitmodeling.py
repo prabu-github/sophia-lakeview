@@ -19,7 +19,7 @@ seed = 2147483647
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('sophia-lakeview: setup')
+    parser = argparse.ArgumentParser('sophia-lakeview: setup_traitmodeling')
     parser.add_argument('--model_type', action='store', type=str, default='plsr')
     parser.add_argument('--model_select', action='store', type=str, default='median-min')
     parser.add_argument('--n_components', action='store', type=int, default=30)
@@ -233,7 +233,7 @@ if __name__ == '__main__':
             n_deploy_configs += 1
         if args['verbose']:
             print(f'--- Created external deploy configs ({n_deploy_configs}).')
-
+    
     # clean up for debugging - run before packaging for CHTC.
     if args['cleanup']:
         for d in paths.values():

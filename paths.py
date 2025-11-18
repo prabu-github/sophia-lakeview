@@ -10,4 +10,5 @@ def get_paths() -> Path:
             'config': io_dir/'config',
             'model': io_dir/'model', 
             'ideploy': io_dir/'ideploy',
-            'edeploy': io_dir/'edeploy'}
+            'edeploy': io_dir/'edeploy',
+            'eda': io_dir/'eda'}
