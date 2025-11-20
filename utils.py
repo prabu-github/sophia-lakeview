@@ -36,8 +36,6 @@ def get_paths() -> Dict:
             'config': io_dir/'config',
             'model': io_dir/'model', 
             'deploy': io_dir/'deploy',
-            'ideploy': io_dir/'ideploy',
-            'edeploy': io_dir/'edeploy',
             'eda': io_dir/'eda'}
 
 
@@ -57,8 +55,7 @@ def get_setup_args(message: str) -> Dict:
     parser.add_argument('--n_inners', action='store', type=int, default=50)
     parser.add_argument('--test_percent', action='store', type=int, default=15)
     parser.add_argument('--valid_percent', action='store', type=int, default=15)
-    parser.add_argument('--ideploy', action='store_true', default=False)
-    parser.add_argument('--edeploy', action='store_true', default=False)
+    parser.add_argument('--deploy', action='store_true', default=False)
     parser.add_argument('--eda', action='store_true', default=False)
     parser.add_argument('--cleanup', action='store_true', default=False)
     parser.add_argument('--verbose', action='store_true', default=False)
@@ -249,35 +246,36 @@ def make_transform_configs(verbose: bool) -> None:
     exp_pred = H.Exp(apply_key='y_pred')
     cmr = H.CommonMinReflectance()
 
-    transforms = {'400-800-asis-uv-raw': [kw_400_800, uv],
-                  '410-800-asis-uv-raw': [kw_410_800, uv],
-                  '420-800-asis-uv-raw': [kw_420_800, uv],
-                  '430-800-asis-uv-raw': [kw_430_800, uv],
-                  '440-800-asis-uv-raw': [kw_440_800, uv],
-                  '450-800-asis-uv-raw': [kw_450_800, uv],
+    transforms = {'400-800-asis-raw': [kw_400_800, uv],
+                  '410-800-asis-raw': [kw_410_800, uv],
+                  '420-800-asis-raw': [kw_420_800, uv],
+                  '430-800-asis-raw': [kw_430_800, uv],
+                  '440-800-asis-raw': [kw_440_800, uv],
+                  '450-800-asis-raw': [kw_450_800, uv],
                   
-                  '400-800-asis-uv-log': [kw_400_800, uv, log_true],
-                  '410-800-asis-uv-log': [kw_410_800, uv, log_true],
-                  '420-800-asis-uv-log': [kw_420_800, uv, log_true],
-                  '430-800-asis-uv-log': [kw_430_800, uv, log_true],
-                  '440-800-asis-uv-log': [kw_440_800, uv, log_true],
-                  '450-800-asis-uv-log': [kw_450_800, uv, log_true],
+                  '400-800-asis-log': [kw_400_800, uv, log_true],
+                  '410-800-asis-log': [kw_410_800, uv, log_true],
+                  '420-800-asis-log': [kw_420_800, uv, log_true],
+                  '430-800-asis-log': [kw_430_800, uv, log_true],
+                  '440-800-asis-log': [kw_440_800, uv, log_true],
+                  '450-800-asis-log': [kw_450_800, uv, log_true],
 
-                  '400-800-move-uv-raw': [kw_400_800, cmr, uv],
-                  '410-800-move-uv-raw': [kw_410_800, cmr, uv],
-                  '420-800-move-uv-raw': [kw_420_800, cmr, uv],
-                  '430-800-move-uv-raw': [kw_430_800, cmr, uv],
-                  '440-800-move-uv-raw': [kw_440_800, cmr, uv],
-                  '450-800-move-uv-raw': [kw_450_800, cmr, uv],
+                  '400-800-move-raw': [kw_400_800, cmr, uv],
+                  '410-800-move-raw': [kw_410_800, cmr, uv],
+                  '420-800-move-raw': [kw_420_800, cmr, uv],
+                  '430-800-move-raw': [kw_430_800, cmr, uv],
+                  '440-800-move-raw': [kw_440_800, cmr, uv],
+                  '450-800-move-raw': [kw_450_800, cmr, uv],
                   
-                  '400-800-move-uv-log': [kw_400_800, cmr, uv, log_true],
-                  '410-800-move-uv-log': [kw_410_800, cmr, uv, log_true],
-                  '420-800-move-uv-log': [kw_420_800, cmr, uv, log_true],
-                  '430-800-move-uv-log': [kw_430_800, cmr, uv, log_true],
-                  '440-800-move-uv-log': [kw_440_800, cmr, uv, log_true],
-                  '450-800-move-uv-log': [kw_450_800, cmr, uv, log_true],
+                  '400-800-move-log': [kw_400_800, cmr, uv, log_true],
+                  '410-800-move-log': [kw_410_800, cmr, uv, log_true],
+                  '420-800-move-log': [kw_420_800, cmr, uv, log_true],
+                  '430-800-move-log': [kw_430_800, cmr, uv, log_true],
+                  '440-800-move-log': [kw_440_800, cmr, uv, log_true],
+                  '450-800-move-log': [kw_450_800, cmr, uv, log_true],
                  
-                  'exp-undo': [exp_true, exp_pred]}
+                  'unlog': [exp_true, exp_pred],
+                  'empty': []}
 
     PATHS['config'].mkdir(parents=True, exist_ok=True)
     
@@ -314,48 +312,6 @@ def make_metric_configs(verbose: bool) -> None:
         print(f'------ Created metric config(s) ({n_configs})')    
 
 
-def make_ideploy_configs(verbose: bool) -> None:
-    '''
-    Make ideploy config(s).
-
-    `verbose`: bool
-               If True, prints messages.
-    '''
-    PATHS = get_paths()
-
-    if verbose:
-        n_configs = len(list(PATHS['config'].glob('IDEPLOY__*.json')))
-        print(f'------ Created ideploy config(s) ({n_configs})')
-
-
-def make_edeploy_configs(verbose: bool) -> None:
-    '''
-    Make edeploy config(s).
-
-    `verbose`: bool
-               If True, prints messages.
-    '''
-    PATHS = get_paths()
-
-    if verbose:
-        n_configs = len(list(PATHS['config'].glob('EDEPLOY__*.json')))
-        print(f'------ Created edeploy config(s) ({n_configs})')
-
-
-def make_eda_configs(verbose: bool) -> None:
-    '''
-    Make eda config(s).
-
-    `verbose`: bool
-               If True, prints messages.
-    '''
-    PATHS = get_paths()
-
-    if verbose:
-        n_configs = len(list(PATHS['config'].glob('EDA__*.json')))
-        print(f'------ Created eda config(s) ({n_configs})')
-
-        
 def cleanup() -> None:
     '''
     Cleanup project specific directories that are created,
@@ -375,15 +331,24 @@ def make_train_configs(transformations_file: Path,
                        valid_percent: int = 15) -> None:
     '''
     Make train config(s).
-    `transformations_file`: Path
-                            
+    `transformations_file`: Path     
+                            Trait: transformation CSV.
     `verbose`: bool
                If True, prints messages.
+    `n_outers`: int 
+                Number outer loops.
+    `n_inners`: int 
+                Number inner loops.
+    `test_percent`: int
+                    Percentage of data for test split.
+    `valid_percent`: int 
+                     Percentage of data for validation split.
+    
     '''
     PATHS = get_paths()
     TRAITXFORMS = get_trait_transformations(transformations_file)
-    TRANSFORMS = {'raw': sorted(list(PATHS['config'].glob(f'TRANSFORM__*raw.json'))),
-                  'log': sorted(list(PATHS['config'].glob(f'TRANSFORM__*log.json')))}
+    TRANSFORMS = {'raw': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-raw.json'))),
+                  'log': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-log.json')))}
 
     PATHS['config'].mkdir(parents=True, exist_ok=True)
     
@@ -416,6 +381,7 @@ def make_train_configs(transformations_file: Path,
             config['plsr_model_selection'] = 'median-min'
             config['plsr_max_components'] = 30
             #-----------------------------------------
+            H.verify_train_config(config)
             config_json = PATHS['config']/f'TRAIN__{model_name}.json'
             with open(config_json, 'w') as writer:
                 json.dump(config, writer)
@@ -423,3 +389,97 @@ def make_train_configs(transformations_file: Path,
     if verbose:
         n_configs = len(list(PATHS['config'].glob('TRAIN__*.json')))
         print(f'------ Created train config(s) ({n_configs})')   
+
+
+def make_eda_configs(transformations_file: Path,
+                     verbose: bool) -> None:
+    '''
+    Make eda config(s).
+    `transformations_file`: Path     
+                            Trait: transformation CSV.
+    `verbose`: bool
+               If True, prints messages.
+    '''
+    PATHS = get_paths()
+    TRAITXFORMS = get_trait_transformations(transformations_file)
+
+    comp_csvs = [f for f in PATHS['compatible'].glob('*.csv')]
+
+    for csv in comp_csvs:
+        trait, tform = csv.stem, TRAITXFORMS[csv.stem]
+        eda_name = f'{tform}__{trait}'
+        transform_json = 'TRANSFORM__empty.json' if tform == 'raw' else 'TRANSFORM__unlog.json'
+        
+        config = H.get_config_template()
+        config['seed'] = get_seed()
+        #-----------------------------------------
+        config['eda_name'] = eda_name
+        config['eda_types'] = ['uni-r2',
+                               'uni-pearson-correlation',
+                               'ndi-r2',
+                               'ndi-pearson-correlation']
+        config['eda_dir'] = str(PATHS['eda']/eda_name)
+        config['eda_csv'] = str(csv)
+        config['eda_subsample'] = -1
+        config['eda_reduce'] = 'mean'
+        config['eda_transform_json'] = str(PATHS['config']/transform_json)
+        #-----------------------------------------
+        H.verify_eda_config(config)
+        config_json = PATHS['config']/f'EDA__{eda_name}.json'
+        with open(config_json, 'w') as writer:
+            json.dump(config, writer)
+                
+    if verbose:
+        n_configs = len(list(PATHS['config'].glob('EDA__*.json')))
+        print(f'------ Created eda config(s) ({n_configs})')
+
+
+def make_deploy_configs(verbose: bool) -> None:
+    '''
+    Make deploy config(s).
+
+    `verbose`: bool
+               If True, prints messages.
+    '''
+    PATHS = get_paths()
+
+    train_config_jsons = [f for f in PATHS['config'].glob('TRAIN__*.json')]
+    train_config_jsons.sort()
+
+    deploy_split_label = 'TEST'
+    deploy_subsample = -1
+    deploy_reduce = 'mean'
+    for train_config_json in train_config_jsons:
+        # load train config; extract details
+        with open(train_config_json, 'r') as reader:
+            train_config = json.load(reader)
+        model_name = train_config['model_name']
+        transform_type = model_name.split('__')[1]
+        if transform_type == 'raw':
+            transform_json = PATHS['config']/'TRANSFORM__empty.json'
+        else:
+            transform_json = PATHS['config']/'TRANSFORM__unlog.json'
+        deploy_csv = Path(train_config['train_csv'])
+        deploy_name = f'{model_name}__{deploy_split_label}__{deploy_csv.stem}'
+
+        config = H.get_config_template()
+        config.update(train_config)
+        #-----------------------------------------
+        config['deploy_dir'] = str(PATHS['deploy']/deploy_name)
+        config['deploy_csv'] = str(deploy_csv)
+        config['deploy_other_cols'] = []
+        config['deploy_subsample'] = deploy_subsample
+        config['deploy_reduce'] = deploy_reduce
+        config['deploy_split_label'] = deploy_split_label
+        config['deploy_transform_json'] = str(transform_json)
+        config['deploy_color_json'] = str(PATHS['config']/'COLOR__default.json')
+        config['deploy_metric_json'] = str(PATHS['config']/'METRIC__default.json')
+        #-----------------------------------------
+        H.verify_deploy_config(config)
+        config_json = PATHS['config']/f'DEPLOY__{deploy_name}.json'
+        with open(config_json, 'w') as writer:
+            json.dump(config, writer)
+    
+    if verbose:
+        n_configs = len(list(PATHS['config'].glob('DEPLOY__*.json')))
+        print(f'------ Created deploy config(s) ({n_configs})')

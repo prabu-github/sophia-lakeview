@@ -19,8 +19,7 @@ from utils import (get_setup_args,
                    make_transform_configs,
                    make_metric_configs,
                    make_train_configs,
-                   make_ideploy_configs,
-                   make_edeploy_configs,
+                   make_deploy_configs,
                    make_eda_configs,
                    cleanup)
 
@@ -30,9 +29,10 @@ if __name__ == '__main__':
     verbose = args['verbose']
     
     PATHS = get_paths()
-
-    # compatible CSV(s)
     csv_file = PATHS['original']/'LakeViewDF_v3.csv'
+    transformations_file = PATHS['original']/'transform_v3.csv'
+    
+    # compatible CSV(s)
     (df, counts_df) = make_compatible_csvs(csv_file=csv_file, 
                                            verbose=verbose)
 
@@ -46,7 +46,6 @@ if __name__ == '__main__':
     make_metric_configs(verbose=verbose)
 
     # make train config(s)
-    transformations_file = PATHS['original']/'transform_v3.csv'
     make_train_configs(transformations_file=transformations_file, 
                        n_inners=args['n_inners'],
                        n_outers=args['n_outers'],
@@ -55,14 +54,12 @@ if __name__ == '__main__':
                        verbose=verbose)
 
     # make ideploy config(s)
-    if args['ideploy']:
-        make_ideploy_configs(verbose=verbose)
-
-    if args['edeploy']:
-        make_edeploy_configs(verbose=verbose)
+    if args['deploy']:
+        make_deploy_configs(verbose=verbose)
 
     if args['eda']:
-        make_eda_configs(verbose=verbose)
+        make_eda_configs(transformations_file=transformations_file, 
+                         verbose=verbose)
         
     if args['cleanup']:
         cleanup()
