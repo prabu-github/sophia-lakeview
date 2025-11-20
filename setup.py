@@ -48,6 +48,10 @@ if __name__ == '__main__':
     # make train config(s)
     transformations_file = PATHS['original']/'transform_v3.csv'
     make_train_configs(transformations_file=transformations_file, 
+                       n_inners=args['n_inners'],
+                       n_outers=args['n_outers'],
+                       test_percent=args['test_percent'],
+                       valid_percent=args['valid_percent'],
                        verbose=verbose)
 
     # make ideploy config(s)

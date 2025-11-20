@@ -35,6 +35,7 @@ def get_paths() -> Dict:
             'compatible': io_dir/'compatible',
             'config': io_dir/'config',
             'model': io_dir/'model', 
+            'deploy': io_dir/'deploy',
             'ideploy': io_dir/'ideploy',
             'edeploy': io_dir/'edeploy',
             'eda': io_dir/'eda'}
@@ -218,6 +219,7 @@ def make_color_configs(df: DataFrame,
     color_dict = {sid: '#CC99CC' for sid in df['sample_id']}
     
     PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     with open(PATHS['config']/'COLOR__default.json', 'w') as writer:
         json.dump(color_dict, writer, indent=4)
 
@@ -275,9 +277,10 @@ def make_transform_configs(verbose: bool) -> None:
                   '440-800-move-uv-log': [kw_440_800, cmr, uv, log_true],
                   '450-800-move-uv-log': [kw_450_800, cmr, uv, log_true],
                  
-                  'undo-log': [exp_true, exp_pred]}
+                  'exp-undo': [exp_true, exp_pred]}
 
     PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     for (k, t) in transforms.items():
         H.save_transforms(transforms=t, 
                           transforms_file=PATHS['config']/f'TRANSFORM__{k}.json') 
@@ -302,29 +305,13 @@ def make_metric_configs(verbose: bool) -> None:
                H.RMSE()]
 
     PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     H.save_metrics(metrics=metrics, 
                    metrics_file=PATHS['config']/'METRIC__default.json')
 
     if verbose:
         n_configs = len(list(PATHS['config'].glob('METRIC__*.json')))
         print(f'------ Created metric config(s) ({n_configs})')    
-
-
-def make_train_configs(transformations_file: Path,
-                       verbose: bool) -> None:
-    '''
-    Make train config(s).
-    `transformations_file`: Path
-                            
-    `verbose`: bool
-               If True, prints messages.
-    '''
-    PATHS = get_paths()
-    TXFORMS = get_trait_transformations(transformations_file)
-    
-    if verbose:
-        n_configs = len(list(PATHS['config'].glob('TRAIN__*.json')))
-        print(f'------ Created train config(s) ({n_configs})')   
 
 
 def make_ideploy_configs(verbose: bool) -> None:
@@ -377,4 +364,62 @@ def cleanup() -> None:
     print('Cleaning up ...')
     for d in get_paths().values():
         if (d.stem != 'original') and d.exists():
-            shutil.rmtree(str(d))    
+            shutil.rmtree(str(d)) 
+
+
+def make_train_configs(transformations_file: Path,
+                       verbose: bool,
+                       n_outers: int = 200,
+                       n_inners: int = 50,
+                       test_percent: int = 15,
+                       valid_percent: int = 15) -> None:
+    '''
+    Make train config(s).
+    `transformations_file`: Path
+                            
+    `verbose`: bool
+               If True, prints messages.
+    '''
+    PATHS = get_paths()
+    TRAITXFORMS = get_trait_transformations(transformations_file)
+    TRANSFORMS = {'raw': sorted(list(PATHS['config'].glob(f'TRANSFORM__*raw.json'))),
+                  'log': sorted(list(PATHS['config'].glob(f'TRANSFORM__*log.json')))}
+
+    PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
+    model_type = 'plsr'
+    train_csvs = sorted(list(PATHS['compatible'].glob('*.csv')))
+    for train_csv in train_csvs:
+        transforms = TRANSFORMS[TRAITXFORMS[train_csv.stem]]
+        
+        for transform in transforms:
+            tkey = transform.stem.split('TRANSFORM__')[-1]
+            model_name = f'{model_type}__{tkey}__{train_csv.stem}'
+
+            config = H.get_config_template()
+            config['seed'] = get_seed()
+            config['model_name'] = model_name
+            config['model_type'] = model_type
+            config['model_dir'] = str(PATHS['model']/model_name)
+            config['n_outers'] = n_outers
+            config['n_inners'] = n_inners
+            config['test_percent'] = test_percent
+            config['valid_percent'] = valid_percent
+            config['inner_type'] = 'montecarlo'
+            config['outer_type'] = 'montecarlo'
+            #-----------------------------------------
+            config['train_csv'] = str(train_csv)
+            config['train_subsample'] = -1
+            config['train_reduce'] = 'mean'
+            config['train_transform_json'] = str(transform)
+            #-----------------------------------------
+            config['plsr_model_selection'] = 'median-min'
+            config['plsr_max_components'] = 30
+            #-----------------------------------------
+            config_json = PATHS['config']/f'TRAIN__{model_name}.json'
+            with open(config_json, 'w') as writer:
+                json.dump(config, writer)
+            
+    if verbose:
+        n_configs = len(list(PATHS['config'].glob('TRAIN__*.json')))
+        print(f'------ Created train config(s) ({n_configs})')   
