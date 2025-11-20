@@ -39,15 +39,13 @@ def get_paths() -> Dict:
             'eda': io_dir/'eda'}
 
 
-def get_setup_args(message: str) -> Dict:
+def get_setup_args() -> Dict:
     '''
-    CLI arguments parser for traitmodleing.
-    
-    `message`: str
+    CLI arguments parser for setup.
     
     Return: Dict
     '''
-    parser = argparse.ArgumentParser(message)
+    parser = argparse.ArgumentParser('Setup')
     parser.add_argument('--model_type', action='store', type=str, default='plsr')
     parser.add_argument('--model_select', action='store', type=str, default='median-min')
     parser.add_argument('--n_components', action='store', type=int, default=30)
@@ -60,6 +58,22 @@ def get_setup_args(message: str) -> Dict:
     parser.add_argument('--cleanup', action='store_true', default=False)
     parser.add_argument('--verbose', action='store_true', default=False)
     parser.add_argument('--min_nsamples', action='store', default=1)
+    return parser.parse_args().__dict__
+
+
+def get_trait_args() -> Dict:
+    '''
+    CLI arguments parser for trait.
+    
+    Return: Dict
+    '''
+    parser = argparse.ArgumentParser('Trait')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--train_config_idx', action='store', type=int)
+    group.add_argument('--train_config_stem', action='store', type=str)
+    group.add_argument('--eda_config_idx', action='store', type=int)
+    group.add_argument('--eda_config_stem', action='store', type=str)
+    parser.add_argument('--verbose', action='store_true', default=False)
     return parser.parse_args().__dict__
 
 
@@ -483,3 +497,110 @@ def make_deploy_configs(verbose: bool) -> None:
     if verbose:
         n_configs = len(list(PATHS['config'].glob('DEPLOY__*.json')))
         print(f'------ Created deploy config(s) ({n_configs})')
+
+
+def get_train_config_json(train_config_idx: int = None,
+                          train_config_stem: str = None) -> Path:
+    '''
+    TRAIN__ JSON corresponing to `train_config_idx` in sorted or
+    TRAIN__ JSON corresponing to `train_config_stem`
+
+    `train_config_idx`: int 
+                        Index into sorted list of TRAIN__ config files.
+    `train_config_stem`: int 
+                         Stem of a particular TRAIN__ config file.
+                        
+    Return: Path
+            If `train_config_idx` and `train_config_stem` are both None, None is returned.
+    '''
+    if (train_config_idx is None) and (train_config_stem is None):
+        return None
+        
+    if (train_config_idx is not None) and (train_config_stem is not None):
+        raise Exception('One of train_config_idx/train_config_stem to be specified; not both.')
+        
+    PATHS = get_paths()
+
+    train_jsons = [f for f in PATHS['config'].glob('TRAIN__*.json')]
+    train_jsons.sort()
+
+    if train_config_idx is not None:
+        if (train_config_idx < 0) or (train_config_idx >= len(train_jsons)):
+            raise Exception(f'{train_config_idx} is invalid.')
+        return train_jsons[train_config_idx]
+    else:
+        found = False
+        for f in train_jsons:
+            if f.stem == train_config_stem:
+                return f
+        if (not found):
+            raise Exception(f'{train_config_stem} is not found.')
+
+
+def get_deploy_config_jsons(train_config_idx: int = None,
+                            train_config_stem: str = None) -> List[Path]:
+    ''' 
+    DEPLOY__ JSON corresponing to `train_config_idx` in sorted, or
+    DEPLOY__ JSON corresponing to `train_config_stem`
+
+    `train_config_idx`: int 
+                        Index into sorted list of TRAIN__ config files.
+    `train_config_stem`: int 
+                         Stem of a particular TRAIN__ config file.
+
+    Return: List[Path]  
+            If `train_config_idx` and `train_config_stem` are both None, None is returned.
+    '''
+    PATHS = get_paths()
+
+    train_json = get_train_config_json(train_config_idx=train_config_idx,
+                                       train_config_stem=train_config_stem)
+    if train_json is not None:
+        train_name = train_json.stem
+        model_name = '__'.join(train_name.split('__')[1:])
+    
+        all_deploy_jsons = [f for f in PATHS['config'].glob('DEPLOY__*.json')]
+        deploy_jsons = [f for f in all_deploy_jsons if model_name in f.stem]
+        deploy_jsons.sort()
+    
+        return deploy_jsons
+    else:
+        return None
+
+
+def get_eda_config_json(eda_config_idx: int = None,
+                        eda_config_stem: str = None) -> Path:
+    '''
+    EDA__ JSON corresponing to `eda_config_idx` in sorted.
+
+    `eda_config_idx`: int 
+                      Index into sorted list of EDA__ config files.
+    `eda_config_stem`: int 
+                       Stem of a particular EDA__ config file.
+                        
+    Return: Path
+            If `eda_config_idx` and `eda_config_stem` are both None, None is returned.
+    '''
+    if (eda_config_idx is None) and (eda_config_stem is None):
+        return None
+        
+    if (eda_config_idx is not None) and (eda_config_stem is not None):
+        raise Exception('One of eda_config_idx/eda_config_stem to be specified; not both.')
+        
+    PATHS = get_paths()
+
+    eda_jsons = [f for f in PATHS['config'].glob('EDA__*.json')]
+    eda_jsons.sort()
+
+    if eda_config_idx is not None:
+        if (eda_config_idx < 0) or (eda_config_idx >= len(eda_jsons)):
+            raise Exception(f'{eda_config_idx} is invalid.')
+        return eda_jsons[eda_config_idx]
+    else:
+        found = False
+        for f in eda_jsons:
+            if f.stem == eda_config_stem:
+                found = True
+                return f
+        if (not found):
+            raise Exception(f'{eda_config_stem} is not found.')

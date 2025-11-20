@@ -25,7 +25,7 @@ from utils import (get_setup_args,
 
 
 if __name__ == '__main__':
-    args = get_setup_args('sophia-lakeview: traitmodeling')
+    args = get_setup_args()
     verbose = args['verbose']
     
     PATHS = get_paths()
