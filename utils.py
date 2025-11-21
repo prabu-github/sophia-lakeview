@@ -39,6 +39,17 @@ def get_paths() -> Dict:
             'eda': io_dir/'eda'}
 
 
+def cleanup() -> None:
+    '''
+    Cleanup project specific directories that are created,
+    except for the original data directory.
+    '''
+    print('Cleaning up ...')
+    for d in get_paths().values():
+        if (d.stem != 'original') and d.exists():
+            shutil.rmtree(str(d)) 
+
+
 def get_setup_args() -> Dict:
     '''
     CLI arguments parser for setup.
@@ -101,7 +112,7 @@ def get_traits() -> Dict:
                  ('secchi_avg', 'secchi')])
 
 
-def get_trait_transformations(transformations_file: Path) -> Dict:
+def get_trait_transformations() -> Dict:
     '''
     Trait transformations.
 
@@ -113,7 +124,8 @@ def get_trait_transformations(transformations_file: Path) -> Dict:
     '''
     PATHS = get_paths()
     TRAITS = get_traits()
-    
+
+    transformations_file = PATHS['original']/'transform_v3.csv'
     df = pd.read_csv(transformations_file).reset_index(drop=True)
 
     return {TRAITS[t]: x for (t, x) in df.values if t in TRAITS}
@@ -163,25 +175,19 @@ def get_trait_indexes(df: DataFrame) -> Dict:
     return trait_indexes
 
 
-def make_compatible_csvs(csv_file: Path,
-                         verbose: bool) -> Tuple[DataFrame, DataFrame]:
+def make_compatible_csvs(verbose: bool) -> None:
     '''
     Makes trait-wise compatible CSVs.
     
-    `csv_file`: Path
-                Data CSV.
     `verbose`: bool
                If True, prints messages.
-               
-    Return: Tuple[DataFrame, DataFrame]
-            Tuple[0]: repackaged DataFrame
-            Tuple[1]: counts DataFrame
-            Counts of the various slices.
     '''
     PATHS = get_paths()
     TRAITS = get_traits()
 
+    
     # read CSV
+    csv_file = PATHS['original']/'LakeViewDF_v3.csv'
     df = repackage_df(pd.read_csv(csv_file, low_memory=False))
     
     # get traitwise indexes
@@ -194,7 +200,6 @@ def make_compatible_csvs(csv_file: Path,
     # make data slices
     base_cols = ['sample_id']
     wave_cols = [c for c in df.columns if c[:2] == 'X_']   
-    trait_counts = defaultdict(list)
     for trait in TRAITS.values():
         # extract trait slice
         wanted_cols = base_cols + [trait] + wave_cols
@@ -202,21 +207,12 @@ def make_compatible_csvs(csv_file: Path,
         trait_df.rename(columns={trait: 'y_true'}, inplace=True)
         trait_df.to_csv(comp_dir/f'{trait}.csv', index=None)
             
-        # tracking counts for trait
-        trait_counts['trait'].append(trait)
-        trait_counts['n_samples'].append(trait_df['sample_id'].nunique())
-
-    counts_df = pd.DataFrame(trait_counts)
-    counts_df = counts_df[['trait', 'n_samples']]
-
     if verbose:
         n_csvs = len(list(PATHS['compatible'].glob('*.csv')))
         print(f'------ Created compatible CSV(s) ({n_csvs})')
-            
-    return (df, counts_df) 
 
-def make_color_configs(df: DataFrame,
-                       verbose: bool) -> None:
+
+def make_color_configs(verbose: bool) -> None:
     '''
     Make color config(s).
 
@@ -226,8 +222,13 @@ def make_color_configs(df: DataFrame,
                If True, prints messages.
     '''
     PATHS = get_paths()
-    
-    color_dict = {sid: '#CC99CC' for sid in df['sample_id']}
+
+    sids = []
+    for comp_csv in PATHS['compatible'].glob('*.json'):
+        df = pd.read_csv(comp_csv)
+        sids += list(df['sample_id'])
+    sids = sorted(list(set(sids)))
+    color_dict = {sid: '#CC99CC' for sid in sids}
     
     PATHS['config'].mkdir(parents=True, exist_ok=True)
     
@@ -326,27 +327,14 @@ def make_metric_configs(verbose: bool) -> None:
         print(f'------ Created metric config(s) ({n_configs})')    
 
 
-def cleanup() -> None:
-    '''
-    Cleanup project specific directories that are created,
-    except for the original data directory.
-    '''
-    print('Cleaning up ...')
-    for d in get_paths().values():
-        if (d.stem != 'original') and d.exists():
-            shutil.rmtree(str(d)) 
-
-
-def make_train_configs(transformations_file: Path,
-                       verbose: bool,
+def make_train_configs(verbose: bool,
                        n_outers: int = 200,
                        n_inners: int = 50,
                        test_percent: int = 15,
                        valid_percent: int = 15) -> None:
     '''
     Make train config(s).
-    `transformations_file`: Path     
-                            Trait: transformation CSV.
+
     `verbose`: bool
                If True, prints messages.
     `n_outers`: int 
@@ -360,7 +348,7 @@ def make_train_configs(transformations_file: Path,
     
     '''
     PATHS = get_paths()
-    TRAITXFORMS = get_trait_transformations(transformations_file)
+    TRAITXFORMS = get_trait_transformations()
     TRANSFORMS = {'raw': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-raw.json'))),
                   'log': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-log.json')))}
 
@@ -405,17 +393,15 @@ def make_train_configs(transformations_file: Path,
         print(f'------ Created train config(s) ({n_configs})')   
 
 
-def make_eda_configs(transformations_file: Path,
-                     verbose: bool) -> None:
+def make_eda_configs(verbose: bool) -> None:
     '''
     Make eda config(s).
-    `transformations_file`: Path     
-                            Trait: transformation CSV.
+   
     `verbose`: bool
                If True, prints messages.
     '''
     PATHS = get_paths()
-    TRAITXFORMS = get_trait_transformations(transformations_file)
+    TRAITXFORMS = get_trait_transformations()
 
     comp_csvs = [f for f in PATHS['compatible'].glob('*.csv')]
 

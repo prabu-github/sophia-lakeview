@@ -5,7 +5,6 @@ import pandas as pd
 import json
 from itertools import product
 from pprint import pprint
-# import argparse
 import shutil 
 
 hytraits_path = (Path(__file__).parent.parent/'hytraits').resolve()
@@ -28,16 +27,11 @@ if __name__ == '__main__':
     args = get_setup_args()
     verbose = args['verbose']
     
-    PATHS = get_paths()
-    csv_file = PATHS['original']/'LakeViewDF_v3.csv'
-    transformations_file = PATHS['original']/'transform_v3.csv'
-    
     # compatible CSV(s)
-    (df, counts_df) = make_compatible_csvs(csv_file=csv_file, 
-                                           verbose=verbose)
+    make_compatible_csvs(verbose=verbose)
 
     # make color config(s)
-    make_color_configs(df=df, verbose=verbose)
+    make_color_configs(verbose=verbose)
 
     # make transform config(s)
     make_transform_configs(verbose=verbose)
@@ -46,8 +40,7 @@ if __name__ == '__main__':
     make_metric_configs(verbose=verbose)
 
     # make train config(s)
-    make_train_configs(transformations_file=transformations_file, 
-                       n_inners=args['n_inners'],
+    make_train_configs(n_inners=args['n_inners'],
                        n_outers=args['n_outers'],
                        test_percent=args['test_percent'],
                        valid_percent=args['valid_percent'],
@@ -58,8 +51,7 @@ if __name__ == '__main__':
         make_deploy_configs(verbose=verbose)
 
     if args['eda']:
-        make_eda_configs(transformations_file=transformations_file, 
-                         verbose=verbose)
+        make_eda_configs(verbose=verbose)
         
     if args['cleanup']:
         cleanup()
