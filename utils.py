@@ -3,6 +3,7 @@ import sys
 from typing import List, Dict
 from pathlib import Path
 from collections import defaultdict
+from itertools import product
 import pandas as pd
 from pandas import DataFrame, Series
 import argparse
@@ -111,25 +112,6 @@ def get_traits() -> Dict:
                  ('PC:chl', 'pcchl'),
                  ('secchi_avg', 'secchi')])
 
-
-def get_trait_transformations() -> Dict:
-    '''
-    Trait transformations.
-
-    `transformations_file`: Path
-                            The transform file.
-                            Columns: 'trait_name', 'transform'
-
-    Return: Dict{trait_code:['raw', 'log']}
-    '''
-    PATHS = get_paths()
-    TRAITS = get_traits()
-
-    transformations_file = PATHS['original']/'transform_v3.csv'
-    df = pd.read_csv(transformations_file).reset_index(drop=True)
-
-    return {TRAITS[t]: x for (t, x) in df.values if t in TRAITS}
-
     
 def repackage_df(df: DataFrame) -> DataFrame:
     '''
@@ -175,7 +157,7 @@ def get_trait_indexes(df: DataFrame) -> Dict:
     return trait_indexes
 
 
-def make_compatible_csvs(verbose: bool) -> None:
+def make_compatible_csvs(verbose: bool = False) -> None:
     '''
     Makes trait-wise compatible CSVs.
     
@@ -185,6 +167,9 @@ def make_compatible_csvs(verbose: bool) -> None:
     PATHS = get_paths()
     TRAITS = get_traits()
 
+    # create compatible dir
+    comp_dir = PATHS['compatible'] 
+    comp_dir.mkdir(parents=True, exist_ok=True)
     
     # read CSV
     csv_file = PATHS['original']/'LakeViewDF_v3.csv'
@@ -193,10 +178,6 @@ def make_compatible_csvs(verbose: bool) -> None:
     # get traitwise indexes
     trait_indexes = get_trait_indexes(df)
 
-    # create compatible dir
-    comp_dir = PATHS['compatible'] 
-    comp_dir.mkdir(parents=True, exist_ok=True)
-    
     # make data slices
     base_cols = ['sample_id']
     wave_cols = [c for c in df.columns if c[:2] == 'X_']   
@@ -212,7 +193,7 @@ def make_compatible_csvs(verbose: bool) -> None:
         print(f'------ Created compatible CSV(s) ({n_csvs})')
 
 
-def make_color_configs(verbose: bool) -> None:
+def make_color_configs(verbose: bool = False) -> None:
     '''
     Make color config(s).
 
@@ -223,14 +204,14 @@ def make_color_configs(verbose: bool) -> None:
     '''
     PATHS = get_paths()
 
+    PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     sids = []
-    for comp_csv in PATHS['compatible'].glob('*.json'):
+    for comp_csv in PATHS['compatible'].glob('*.csv'):
         df = pd.read_csv(comp_csv)
         sids += list(df['sample_id'])
     sids = sorted(list(set(sids)))
     color_dict = {sid: '#CC99CC' for sid in sids}
-    
-    PATHS['config'].mkdir(parents=True, exist_ok=True)
     
     with open(PATHS['config']/'COLOR__default.json', 'w') as writer:
         json.dump(color_dict, writer, indent=4)
@@ -240,7 +221,31 @@ def make_color_configs(verbose: bool) -> None:
         print(f'------ Created color config(s) ({n_configs})')
 
 
-def make_transform_configs(verbose: bool) -> None:
+def make_metric_configs(verbose: bool = False) -> None:
+    '''
+    Make metric config(s).
+
+    `verbose`: bool
+               If True, prints messages.
+    '''
+    PATHS = get_paths()
+
+    PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
+    metrics = [H.R2(),
+               H.RangeNormalizedRMSE(),
+               H.InterquartileNormalizedRMSE(),
+               H.RMSE()]
+    
+    H.save_metrics(metrics=metrics, 
+                   metrics_file=PATHS['config']/'METRIC__default.json')
+
+    if verbose:
+        n_configs = len(list(PATHS['config'].glob('METRIC__*.json')))
+        print(f'------ Created metric config(s) ({n_configs})')    
+
+
+def make_transform_configs(verbose: bool = False) -> None:
     '''
     Make transform config(s).
 
@@ -249,6 +254,8 @@ def make_transform_configs(verbose: bool) -> None:
     '''
     PATHS = get_paths()
 
+    PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     kw_400_800 = H.KeepWavelengths(keep_ranges=[(399.99, 800.01)]) 
     kw_410_800 = H.KeepWavelengths(keep_ranges=[(409.99, 800.01)]) 
     kw_420_800 = H.KeepWavelengths(keep_ranges=[(419.99, 800.01)])
@@ -256,9 +263,10 @@ def make_transform_configs(verbose: bool) -> None:
     kw_440_800 = H.KeepWavelengths(keep_ranges=[(439.99, 800.01)]) 
     kw_450_800 = H.KeepWavelengths(keep_ranges=[(449.99, 800.01)]) 
     uv = H.UnitVectorize()
-    log_true = H.Log(apply_key='y_true')
-    exp_true = H.Exp(apply_key='y_true')
-    exp_pred = H.Exp(apply_key='y_pred')
+    log_true = H.Log(apply_key='y_true', result_key='y_true')
+    log_pred = H.Log(apply_key='y_pred', result_key='y_pred')
+    exp_true = H.Exp(apply_key='y_true', result_key='y_true')
+    exp_pred = H.Exp(apply_key='y_pred', result_key='y_pred')
     cmr = H.CommonMinReflectance()
 
     transforms = {'400-800-asis-raw': [kw_400_800, uv],
@@ -288,12 +296,15 @@ def make_transform_configs(verbose: bool) -> None:
                   '430-800-move-log': [kw_430_800, cmr, uv, log_true],
                   '440-800-move-log': [kw_440_800, cmr, uv, log_true],
                   '450-800-move-log': [kw_450_800, cmr, uv, log_true],
-                 
-                  'unlog': [exp_true, exp_pred],
-                  'empty': []}
 
-    PATHS['config'].mkdir(parents=True, exist_ok=True)
-    
+                  'log-undo': [exp_true, exp_pred],
+                  'empty-undo': [],
+                  
+                  'asis-raw-eda': [kw_400_800],
+                  'asis-log-eda': [kw_400_800, log_true],
+                  'move-raw-eda': [kw_400_800, cmr],
+                  'move-log-eda': [kw_400_800, cmr, log_true]}
+
     for (k, t) in transforms.items():
         H.save_transforms(transforms=t, 
                           transforms_file=PATHS['config']/f'TRANSFORM__{k}.json') 
@@ -303,31 +314,50 @@ def make_transform_configs(verbose: bool) -> None:
         print(f'------ Created transform config(s) ({n_configs})')    
 
 
-def make_metric_configs(verbose: bool) -> None:
+def make_eda_configs(verbose: bool = False) -> None:
     '''
-    Make metric config(s).
-
+    Make eda config(s).
+   
     `verbose`: bool
                If True, prints messages.
     '''
     PATHS = get_paths()
-    
-    metrics = [H.R2(),
-               H.RangeNormalizedRMSE(),
-               H.InterquartileNormalizedRMSE(),
-               H.RMSE()]
 
     PATHS['config'].mkdir(parents=True, exist_ok=True)
-    
-    H.save_metrics(metrics=metrics, 
-                   metrics_file=PATHS['config']/'METRIC__default.json')
 
+    eda_subsample = -1
+    eda_reduce = 'mean'
+    comp_csvs = [f for f in PATHS['compatible'].glob('*.csv')]
+    transform_jsons = sorted(list(PATHS['config'].glob(f'TRANSFORM__*-eda.json'))) 
+    for (comp_csv, transform_json) in product(comp_csvs, transform_jsons):
+        tkey = Path(transform_json).stem.split('TRANSFORM__')[-1]
+        eda_name = f'{comp_csv.stem}-{tkey}'
+        
+        config = H.get_config_template()
+        config['seed'] = get_seed()
+        #-----------------------------------------
+        config['eda_name'] = eda_name
+        config['eda_types'] = ['uni-r2',
+                               'uni-pearson-correlation',
+                               'ndi-r2',
+                               'ndi-pearson-correlation']
+        config['eda_dir'] = str(PATHS['eda']/eda_name)
+        config['eda_csv'] = str(comp_csv)
+        config['eda_subsample'] = eda_subsample
+        config['eda_reduce'] = eda_reduce
+        config['eda_transform_json'] = str(transform_json)
+        #-----------------------------------------
+        H.verify_eda_config(config)
+        config_json = PATHS['config']/f'EDA__{eda_name}.json'
+        with open(config_json, 'w') as writer:
+            json.dump(config, writer)
+                
     if verbose:
-        n_configs = len(list(PATHS['config'].glob('METRIC__*.json')))
-        print(f'------ Created metric config(s) ({n_configs})')    
+        n_configs = len(list(PATHS['config'].glob('EDA__*.json')))
+        print(f'------ Created eda config(s) ({n_configs})')
 
 
-def make_train_configs(verbose: bool,
+def make_train_configs(verbose: bool = False,
                        n_outers: int = 200,
                        n_inners: int = 50,
                        test_percent: int = 15,
@@ -348,93 +378,51 @@ def make_train_configs(verbose: bool,
     
     '''
     PATHS = get_paths()
-    TRAITXFORMS = get_trait_transformations()
-    TRANSFORMS = {'raw': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-raw.json'))),
-                  'log': sorted(list(PATHS['config'].glob(f'TRANSFORM__*-log.json')))}
-
+    
     PATHS['config'].mkdir(parents=True, exist_ok=True)
     
     model_type = 'plsr'
+    train_subsample = -1
+    train_reduce = 'mean'
     train_csvs = sorted(list(PATHS['compatible'].glob('*.csv')))
-    for train_csv in train_csvs:
-        transforms = TRANSFORMS[TRAITXFORMS[train_csv.stem]]
-        
-        for transform in transforms:
-            tkey = transform.stem.split('TRANSFORM__')[-1]
-            model_name = f'{model_type}__{tkey}__{train_csv.stem}'
+    transform_jsons = sorted(list(PATHS['config'].glob(f'TRANSFORM__*-raw.json'))) 
+    transform_jsons += sorted(list(PATHS['config'].glob(f'TRANSFORM__*-log.json')))
+    
+    for (train_csv, transform_json) in product(train_csvs, transform_jsons):
+        tkey = transform_json.stem.split('TRANSFORM__')[-1]
+        model_name = f'{model_type}__{tkey}__{train_csv.stem}'
 
-            config = H.get_config_template()
-            config['seed'] = get_seed()
-            config['model_name'] = model_name
-            config['model_type'] = model_type
-            config['model_dir'] = str(PATHS['model']/model_name)
-            config['n_outers'] = n_outers
-            config['n_inners'] = n_inners
-            config['test_percent'] = test_percent
-            config['valid_percent'] = valid_percent
-            config['inner_type'] = 'montecarlo'
-            config['outer_type'] = 'montecarlo'
-            #-----------------------------------------
-            config['train_csv'] = str(train_csv)
-            config['train_subsample'] = -1
-            config['train_reduce'] = 'mean'
-            config['train_transform_json'] = str(transform)
-            #-----------------------------------------
-            config['plsr_model_selection'] = 'median-min'
-            config['plsr_max_components'] = 30
-            #-----------------------------------------
-            H.verify_train_config(config)
-            config_json = PATHS['config']/f'TRAIN__{model_name}.json'
-            with open(config_json, 'w') as writer:
-                json.dump(config, writer)
+        config = H.get_config_template()
+        config['seed'] = get_seed()
+        config['model_name'] = model_name
+        config['model_type'] = model_type
+        config['model_dir'] = str(PATHS['model']/model_name)
+        config['n_outers'] = n_outers
+        config['n_inners'] = n_inners
+        config['test_percent'] = test_percent
+        config['valid_percent'] = valid_percent
+        config['inner_type'] = 'montecarlo'
+        config['outer_type'] = 'montecarlo'
+        #-----------------------------------------
+        config['train_csv'] = str(train_csv)
+        config['train_subsample'] = train_subsample
+        config['train_reduce'] = train_reduce
+        config['train_transform_json'] = str(transform_json)
+        #-----------------------------------------
+        config['plsr_model_selection'] = 'median-min'
+        config['plsr_max_components'] = 30
+        #-----------------------------------------
+        H.verify_train_config(config)
+        config_json = PATHS['config']/f'TRAIN__{model_name}.json'
+        with open(config_json, 'w') as writer:
+            json.dump(config, writer)
             
     if verbose:
         n_configs = len(list(PATHS['config'].glob('TRAIN__*.json')))
         print(f'------ Created train config(s) ({n_configs})')   
 
 
-def make_eda_configs(verbose: bool) -> None:
-    '''
-    Make eda config(s).
-   
-    `verbose`: bool
-               If True, prints messages.
-    '''
-    PATHS = get_paths()
-    TRAITXFORMS = get_trait_transformations()
-
-    comp_csvs = [f for f in PATHS['compatible'].glob('*.csv')]
-
-    for csv in comp_csvs:
-        trait, tform = csv.stem, TRAITXFORMS[csv.stem]
-        eda_name = f'{tform}__{trait}'
-        transform_json = 'TRANSFORM__empty.json' if tform == 'raw' else 'TRANSFORM__unlog.json'
-        
-        config = H.get_config_template()
-        config['seed'] = get_seed()
-        #-----------------------------------------
-        config['eda_name'] = eda_name
-        config['eda_types'] = ['uni-r2',
-                               'uni-pearson-correlation',
-                               'ndi-r2',
-                               'ndi-pearson-correlation']
-        config['eda_dir'] = str(PATHS['eda']/eda_name)
-        config['eda_csv'] = str(csv)
-        config['eda_subsample'] = -1
-        config['eda_reduce'] = 'mean'
-        config['eda_transform_json'] = str(PATHS['config']/transform_json)
-        #-----------------------------------------
-        H.verify_eda_config(config)
-        config_json = PATHS['config']/f'EDA__{eda_name}.json'
-        with open(config_json, 'w') as writer:
-            json.dump(config, writer)
-                
-    if verbose:
-        n_configs = len(list(PATHS['config'].glob('EDA__*.json')))
-        print(f'------ Created eda config(s) ({n_configs})')
-
-
-def make_deploy_configs(verbose: bool) -> None:
+def make_deploy_configs(verbose: bool = False) -> None:
     '''
     Make deploy config(s).
 
@@ -443,23 +431,25 @@ def make_deploy_configs(verbose: bool) -> None:
     '''
     PATHS = get_paths()
 
+    PATHS['config'].mkdir(parents=True, exist_ok=True)
+    
     train_config_jsons = [f for f in PATHS['config'].glob('TRAIN__*.json')]
     train_config_jsons.sort()
 
     deploy_split_label = 'TEST'
-    deploy_subsample = -1
-    deploy_reduce = 'mean'
     for train_config_json in train_config_jsons:
         # load train config; extract details
         with open(train_config_json, 'r') as reader:
             train_config = json.load(reader)
         model_name = train_config['model_name']
-        transform_type = model_name.split('__')[1]
-        if transform_type == 'raw':
-            transform_json = PATHS['config']/'TRANSFORM__empty.json'
+        transform_name = model_name.split('__')[1]
+        if 'raw' in transform_name:
+            transform_json = 'TRANSFORM__empty-undo.json'
         else:
-            transform_json = PATHS['config']/'TRANSFORM__unlog.json'
+            transform_json = 'TRANSFORM__log-undo.json'
         deploy_csv = Path(train_config['train_csv'])
+        deploy_subsample = train_config['train_subsample']
+        deploy_reduce = train_config['train_reduce']
         deploy_name = f'{model_name}__{deploy_split_label}__{deploy_csv.stem}'
 
         config = H.get_config_template()
@@ -471,7 +461,7 @@ def make_deploy_configs(verbose: bool) -> None:
         config['deploy_subsample'] = deploy_subsample
         config['deploy_reduce'] = deploy_reduce
         config['deploy_split_label'] = deploy_split_label
-        config['deploy_transform_json'] = str(transform_json)
+        config['deploy_transform_json'] = str(PATHS['config']/transform_json)
         config['deploy_color_json'] = str(PATHS['config']/'COLOR__default.json')
         config['deploy_metric_json'] = str(PATHS['config']/'METRIC__default.json')
         #-----------------------------------------

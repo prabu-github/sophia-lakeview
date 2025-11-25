@@ -28,8 +28,8 @@ if __name__ == '__main__':
             message += f' (idx = {args["train_config_idx"]}) ...'
         print(message)
         
-        # TRAINER = H.TraitTrainer()
-        # TRAINER(config_json=train_json)
+        TRAINER = H.TraitTrainer()
+        TRAINER(config_json=train_json)
 
     deploy_jsons = get_deploy_config_jsons(train_config_idx=args['train_config_idx'],
                                            train_config_stem=args['train_config_stem'])
@@ -41,11 +41,8 @@ if __name__ == '__main__':
         print(message)
 
         for deploy_json in deploy_jsons:
-            print(f'-----{deploy_json.stem}')
-
-        # for deploy_json in deploy_jsons:
-        #     DEPLOYER = H.TraitDeployerCSV()
-        #     DEPLOYER(config_json=deploy_json)
+            DEPLOYER = H.TraitDeployerCSV()
+            DEPLOYER(config_json=deploy_json)
 
     eda_json = get_eda_config_json(eda_config_idx=args['eda_config_idx'],
                                    eda_config_stem=args['eda_config_stem'])
@@ -55,5 +52,5 @@ if __name__ == '__main__':
             message += f' (idx = {args["eda_config_idx"]}) ...'
         print(message)
         
-        # EDA = H.EDA()
-        # EDA(config_json=eda_json)
+        EDA = H.EDA()
+        EDA(config_json=eda_json)

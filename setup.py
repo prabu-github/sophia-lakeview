@@ -25,33 +25,33 @@ from utils import (get_setup_args,
 
 if __name__ == '__main__':
     args = get_setup_args()
-    verbose = args['verbose']
-    
-    # compatible CSV(s)
-    make_compatible_csvs(verbose=verbose)
-
-    # make color config(s)
-    make_color_configs(verbose=verbose)
-
-    # make transform config(s)
-    make_transform_configs(verbose=verbose)
-
-    # make metric config(s)
-    make_metric_configs(verbose=verbose)
-
-    # make train config(s)
-    make_train_configs(n_inners=args['n_inners'],
-                       n_outers=args['n_outers'],
-                       test_percent=args['test_percent'],
-                       valid_percent=args['valid_percent'],
-                       verbose=verbose)
-
-    # make ideploy config(s)
-    if args['deploy']:
-        make_deploy_configs(verbose=verbose)
-
-    if args['eda']:
-        make_eda_configs(verbose=verbose)
-        
+    # cleanup
     if args['cleanup']:
         cleanup()
+    else:
+        verbose = args['verbose']
+            
+        # compatible CSV(s)
+        make_compatible_csvs(verbose=verbose)
+    
+        # make color config(s)
+        make_color_configs(verbose=verbose)
+    
+        # make metric config(s)
+        make_metric_configs(verbose=verbose)
+
+        # make transform config(s)
+        make_transform_configs(verbose=verbose)
+        
+        # make eda configs
+        make_eda_configs(verbose=verbose)
+        
+        # make train config(s)
+        make_train_configs(n_inners=args['n_inners'],
+                           n_outers=args['n_outers'],
+                           test_percent=args['test_percent'],
+                           valid_percent=args['valid_percent'],
+                           verbose=verbose)
+    
+        # make deploy config(s)
+        make_deploy_configs(verbose=verbose)
