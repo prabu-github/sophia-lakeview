@@ -262,40 +262,55 @@ def make_transform_configs(verbose: bool = False) -> None:
     kw_430_800 = H.KeepWavelengths(keep_ranges=[(429.99, 800.01)]) 
     kw_440_800 = H.KeepWavelengths(keep_ranges=[(439.99, 800.01)]) 
     kw_450_800 = H.KeepWavelengths(keep_ranges=[(449.99, 800.01)]) 
-    uv = H.UnitVectorize()
+    uv = H.UnitVectorize(apply_key='x', result_key='x')
     log_true = H.Log(apply_key='y_true', result_key='y_true')
     log_pred = H.Log(apply_key='y_pred', result_key='y_pred')
     exp_true = H.Exp(apply_key='y_true', result_key='y_true')
     exp_pred = H.Exp(apply_key='y_pred', result_key='y_pred')
-    cmr = H.CommonMinReflectance()
+    cmr = H.CommonMinReflectance(apply_key='x', result_key='x')
+    l10i = H.Log10Inv(apply_key='x', result_key='x')
 
-    transforms = {'400-800-asis-raw': [kw_400_800, uv],
-                  '410-800-asis-raw': [kw_410_800, uv],
-                  '420-800-asis-raw': [kw_420_800, uv],
-                  '430-800-asis-raw': [kw_430_800, uv],
-                  '440-800-asis-raw': [kw_440_800, uv],
-                  '450-800-asis-raw': [kw_450_800, uv],
+    transforms = {'400-asis-raw': [kw_400_800, uv],
+                  '410-asis-raw': [kw_410_800, uv],
+                  '420-asis-raw': [kw_420_800, uv],
+                  '430-asis-raw': [kw_430_800, uv],
+                  '440-asis-raw': [kw_440_800, uv],
+                  '450-asis-raw': [kw_450_800, uv],
                   
-                  '400-800-asis-log': [kw_400_800, uv, log_true],
-                  '410-800-asis-log': [kw_410_800, uv, log_true],
-                  '420-800-asis-log': [kw_420_800, uv, log_true],
-                  '430-800-asis-log': [kw_430_800, uv, log_true],
-                  '440-800-asis-log': [kw_440_800, uv, log_true],
-                  '450-800-asis-log': [kw_450_800, uv, log_true],
+                  '400-asis-log': [kw_400_800, uv, log_true],
+                  '410-asis-log': [kw_410_800, uv, log_true],
+                  '420-asis-log': [kw_420_800, uv, log_true],
+                  '430-asis-log': [kw_430_800, uv, log_true],
+                  '440-asis-log': [kw_440_800, uv, log_true],
+                  '450-asis-log': [kw_450_800, uv, log_true],
 
-                  '400-800-move-raw': [kw_400_800, cmr, uv],
-                  '410-800-move-raw': [kw_410_800, cmr, uv],
-                  '420-800-move-raw': [kw_420_800, cmr, uv],
-                  '430-800-move-raw': [kw_430_800, cmr, uv],
-                  '440-800-move-raw': [kw_440_800, cmr, uv],
-                  '450-800-move-raw': [kw_450_800, cmr, uv],
+                  '400-move-raw': [kw_400_800, cmr, uv],
+                  '410-move-raw': [kw_410_800, cmr, uv],
+                  '420-move-raw': [kw_420_800, cmr, uv],
+                  '430-move-raw': [kw_430_800, cmr, uv],
+                  '440-move-raw': [kw_440_800, cmr, uv],
+                  '450-move-raw': [kw_450_800, cmr, uv],
                   
-                  '400-800-move-log': [kw_400_800, cmr, uv, log_true],
-                  '410-800-move-log': [kw_410_800, cmr, uv, log_true],
-                  '420-800-move-log': [kw_420_800, cmr, uv, log_true],
-                  '430-800-move-log': [kw_430_800, cmr, uv, log_true],
-                  '440-800-move-log': [kw_440_800, cmr, uv, log_true],
-                  '450-800-move-log': [kw_450_800, cmr, uv, log_true],
+                  '400-move-log': [kw_400_800, cmr, uv, log_true],
+                  '410-move-log': [kw_410_800, cmr, uv, log_true],
+                  '420-move-log': [kw_420_800, cmr, uv, log_true],
+                  '430-move-log': [kw_430_800, cmr, uv, log_true],
+                  '440-move-log': [kw_440_800, cmr, uv, log_true],
+                  '450-move-log': [kw_450_800, cmr, uv, log_true],
+
+                  '400-move-pa-raw': [kw_400_800, cmr, l10i, uv],
+                  '410-move-pa-raw': [kw_410_800, cmr, l10i, uv],
+                  '420-move-pa-raw': [kw_420_800, cmr, l10i, uv],
+                  '430-move-pa-raw': [kw_430_800, cmr, l10i, uv],
+                  '440-move-pa-raw': [kw_440_800, cmr, l10i, uv],
+                  '450-move-pa-raw': [kw_450_800, cmr, l10i, uv],
+                  
+                  '400-move-pa-log': [kw_400_800, cmr, l10i, uv, log_true],
+                  '410-move-pa-log': [kw_410_800, cmr, l10i, uv, log_true],
+                  '420-move-pa-log': [kw_420_800, cmr, l10i, uv, log_true],
+                  '430-move-pa-log': [kw_430_800, cmr, l10i, uv, log_true],
+                  '440-move-pa-log': [kw_440_800, cmr, l10i, uv, log_true],
+                  '450-move-pa-log': [kw_450_800, cmr, l10i, uv, log_true],
 
                   'log-undo': [exp_true, exp_pred],
                   'empty-undo': [],
@@ -303,7 +318,9 @@ def make_transform_configs(verbose: bool = False) -> None:
                   'asis-raw-eda': [kw_400_800],
                   'asis-log-eda': [kw_400_800, log_true],
                   'move-raw-eda': [kw_400_800, cmr],
-                  'move-log-eda': [kw_400_800, cmr, log_true]}
+                  'move-log-eda': [kw_400_800, cmr, log_true],
+                  'move-pa-raw-eda': [kw_400_800, cmr, l10i],
+                  'move-pa-log-eda': [kw_400_800, cmr, l10i, log_true]}
 
     for (k, t) in transforms.items():
         H.save_transforms(transforms=t, 
