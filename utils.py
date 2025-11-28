@@ -37,7 +37,9 @@ def get_paths() -> Dict:
             'config': io_dir/'config',
             'model': io_dir/'model', 
             'deploy': io_dir/'deploy',
-            'eda': io_dir/'eda'}
+            'eda': io_dir/'eda',
+            'fromchtc': io_dir/'fromchtc',
+            'post': io_dir/'post'}
 
 
 def cleanup() -> None:
