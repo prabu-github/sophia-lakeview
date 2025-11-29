@@ -71,7 +71,6 @@ def get_setup_args() -> Dict:
     parser.add_argument('--eda', action='store_true', default=False)
     parser.add_argument('--cleanup', action='store_true', default=False)
     parser.add_argument('--verbose', action='store_true', default=False)
-    parser.add_argument('--min_nsamples', action='store', default=1)
     return parser.parse_args().__dict__
 
 
@@ -166,6 +165,9 @@ def make_compatible_csvs(verbose: bool = False) -> None:
     `verbose`: bool
                If True, prints messages.
     '''
+    timer = H.Timer()
+    timer.start()
+    
     PATHS = get_paths()
     TRAITS = get_traits()
 
@@ -190,9 +192,11 @@ def make_compatible_csvs(verbose: bool = False) -> None:
         trait_df.rename(columns={trait: 'y_true'}, inplace=True)
         trait_df.to_csv(comp_dir/f'{trait}.csv', index=None)
             
+    timer.stop()
+    
     if verbose:
         n_csvs = len(list(PATHS['compatible'].glob('*.csv')))
-        print(f'------ Created compatible CSV(s) ({n_csvs})')
+        print(f'------ Created compatible CSV(s) ({n_csvs}) (in {timer.elapsed()})')
 
 
 def make_color_configs(verbose: bool = False) -> None:
