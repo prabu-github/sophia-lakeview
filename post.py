@@ -26,6 +26,7 @@ def get_deploy_by_trait() -> Dict:
             Key: str; trait name
             Value: Dict; {str (treatment):, Path (deploy dir)}
     '''
+    PATHS = get_paths()
     PATHS['post'].mkdir(parents=True, exist_ok=True)
 
     deploy_dirs = [e for e in PATHS['deploy'].glob('*') if e.is_dir()]
@@ -66,6 +67,7 @@ def get_model_by_trait() -> Dict:
             Key: str; trait name
             Value: Dict; {str (treatment):, Path (model dir)}
     '''
+    PATHS = get_paths()
     PATHS['post'].mkdir(parents=True, exist_ok=True)
 
     model_dirs = [e for e in PATHS['model'].glob('*') if e.is_dir()]
@@ -106,6 +108,7 @@ def get_eda_by_trait() -> Dict:
 
     Return: Dict; {str (trait): List[Tuple[str, Path]] ([(treatment, eda dir)])}
     '''
+    PATHS = get_paths()
     TRAITS = get_traits()
     
     suffixes = ['asis-raw', 'asis-log', 'move-raw', 'move-log', 'move-pa-raw', 'move-pa-log']
@@ -220,7 +223,7 @@ def make_truepreds() -> None:
 
     print('True-vs-Predictions ...')
     for trait in TRAITS.values():
-        print(f'--- Making {trait}_truepreds.jpg')
+        print(f'--- Making {trait}_truepreds_with_sdev.jpg, {trait}_truepreds_without_sdev.jpg')
         trait_deploy = get_6x6_trait_deploy(trait_deploys[trait])
         n_rows, n_cols = len(trait_deploy), len(trait_deploy[0][1])
         
@@ -254,7 +257,41 @@ def make_truepreds() -> None:
             ax[-1, c].set_xlabel('True')
         fig.suptitle(trait, y=0.99, fontsize=18)
         plt.tight_layout()
-        plt.savefig(PATHS['post']/trait/f'{trait}_truepreds.jpg')
+        plt.savefig(PATHS['post']/trait/f'{trait}_truepreds_with_sdev.jpg')
+        plt.close()
+
+        fig, ax = plt.subplots(6, 6, figsize=(30, 30), sharex=True, sharey=True)
+        for (row, (treat, col_dirs)) in enumerate(trait_deploy):
+            for (col, col_dir) in enumerate(col_dirs):
+                preds_df = pd.read_csv(col_dir/'preds.csv')
+                
+                colors_df = pd.DataFrame({'sample_id': preds_df['sample_id']})
+                colors_df['color'] = start_colors[col]
+
+                metrics_df = pd.read_csv(col_dir/'metrics.csv')
+                r2 = np.mean(metrics_df['r2'].values)
+                rnrmse = np.mean(metrics_df['range_normalized_rmse'].values)
+                stats = (f'R2 = {r2:.2f}\n'
+                         f'RNRMSE = {rnrmse:.1f}')
+
+                ax[row, col] = H.plot_pred_vs_true(ax[row, col],
+                                                   pred_df=preds_df,
+                                                   color_df=colors_df,
+                                                   show_sdev=False)
+                ax[row, col].text(0.07, 
+                                  0.85, 
+                                  stats, 
+                                  fontsize=9,
+                                  transform=ax[row, col].transAxes,
+                                  horizontalalignment='left')
+        for r in range(6):
+            ax[r, 0].set_ylabel('Predicted')
+            ax[r, 0].set_title(trait_deploy[r][0])
+        for c in range(6):
+            ax[-1, c].set_xlabel('True')
+        fig.suptitle(trait, y=0.99, fontsize=18)
+        plt.tight_layout()
+        plt.savefig(PATHS['post']/trait/f'{trait}_truepreds_without_sdev.jpg')
         plt.close()
 
 
