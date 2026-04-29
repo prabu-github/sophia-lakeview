@@ -131,9 +131,6 @@ def train_model(model_name: str,
                                            split_percents=split_percents,
                                            purpose='train',
                                            splits_needed=True)
-    # data = dataset[None]
-    # pprint(data['y_true'][:3])
-    # pprint(data['unique_id'][:3])
     
     if model_type == 'plsr':
         final = model_name.split('__')[-1]
@@ -209,9 +206,6 @@ def deploy_model(model_name: str,
                                            split_percents=split_percents,
                                            purpose='deploy',
                                            splits_needed=splits_needed)
-    # data = dataset[None]
-    # pprint(data['y_true'][:3])
-    # pprint(data['unique_id'][:3])
     
     metrics = [H.RMSE(),
                H.RangeNormalizedRMSE(),

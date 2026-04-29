@@ -59,8 +59,8 @@ def get_ytransforms(mn: str = None) -> Dict:
             {ytransform_key: List[H.BaseTransform]}        
     '''
     ytransforms = {'id': [],
-                   'sqrt': [H.Log10Transform()],
-                   'log10': [H.SqrtTransform()]}
+                   'sqrt': [H.SqrtTransform()],
+                   'log10': [H.Log10Transform()]}
     if mn is None:
         return ytransforms
     else:
