@@ -17,6 +17,7 @@ if str(hytraits_path) not in sys.path:
 from hytraits import (TabularSpectraDataset,
                       Splits,
                       get_train_valid_test_splits,
+                      WavelengthResampling5nm,
                       KeepWavelengths,
                       UnitVectorize,
                       fit_fastdplsr,
@@ -81,11 +82,13 @@ def get_xtransforms(ds_key: str) -> Dict:
             {xtransform_key: List[BaseTransform]}        
     '''  
     xtransforms = {}
-    
-    ranges = [(400, 800)]
-    xtransforms['vsbl-uv'] = [KeepWavelengths(keep_ranges=ranges),
-                              UnitVectorize()]
-            
+
+    wr = WavelengthResampling5nm(wave_range=(410, 800))
+    kw = KeepWavelengths(keep_ranges=[(410, 800)])
+    uv = UnitVectorize()
+    xtransforms['wr5-vsbl-uv'] = [wr, 
+                                  kw, 
+                                  uv]
     return xtransforms
     
 

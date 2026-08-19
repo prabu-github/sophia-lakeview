@@ -47,7 +47,6 @@ if __name__ == '__main__':
                                  'parquet'])
 
     args = parser.parse_args()
-    pprint(args)
 
     if args.get_xtransforms:
         xts = get_xtransforms(ds_key=args.dskey)
@@ -80,4 +79,5 @@ if __name__ == '__main__':
         print(f'{dataset.wave_ranges = }')
         d = dataset[0]
         print(f'{d["wave_ranges"] = }')
+        print(f'{d["wavelengths"] = }')
     

@@ -26,7 +26,7 @@ Code for sophia-lakeview
 # CHTC setup: Create submit files
 
 - `cd projworks`
-- `python sophia-lakeview/chtcsetup.py --models_per_submit 1`
+- `python sophia-lakeview/chtcsetup.py --models_per_submit 2`
 
 ---
 
