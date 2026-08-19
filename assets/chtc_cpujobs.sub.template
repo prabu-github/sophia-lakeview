@@ -4,7 +4,12 @@ universe = vanilla
 # IMPORTANT! Require execute servers that have Staging:
 Requirements = (Target.HasCHTCStaging == true)
 
-container_image = hytraits_container.sif
+INIT = INITIAL
+USER = USERNAME
+PROJ = PROJNAME
+
+
+container_image = file:///staging/$(INIT)/$(USER)/$(PROJ)/toremote/hytraits-cpu.sif
 
 # Set files to capture log, standard output & error
 log = log/$(Cluster)_$(Process).log
@@ -12,18 +17,19 @@ error = err/$(Cluster)_$(Process).err
 output = out/$(Cluster)_$(Process).out
 
 # transfer pre post
-transfer_input_files = hytraits.tar.gz, $(PROJECT).tar.gz
 
 # Specify executable
-executable = ./predict.sh
+executable = ./cpujob.sh
 
 # Arguments to pass to the executable
-arguments = $(USERNAME) $(PROJECT) $(MODELS)  
+arguments = $(MODEL)
 
 should_transfer_files = YES
 
-request_cpus = 1
-request_disk = 16GB
-request_memory = 8GB
+max_idle = 1000
 
-queue USERNAME,PROJECT,MODELS from PARAMSFILE
+request_cpus = 1
+request_disk = 48GB
+request_memory = 32GB
+
+queue MODEL from PARAMSFILE

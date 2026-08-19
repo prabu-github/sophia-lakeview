@@ -1,3 +1,0 @@
-JOB A submit.model.0
-JOB B submit.packstaging.0
-PARENT A CHILD B

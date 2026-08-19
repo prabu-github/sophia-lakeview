@@ -208,4 +208,6 @@ __marimo__/
 
 
 # HyTraits
-io_/
+origdata/
+compdata/
+gendata/
