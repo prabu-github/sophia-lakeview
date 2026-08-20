@@ -173,7 +173,6 @@ def fit_model(model_name: str,
                                seed=seed)
     
     hyps = {'n_components': 60,
-            'scale': True,
             'sweep': True,
             'model_type': 'dplsr'}
 

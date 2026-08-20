@@ -19,14 +19,14 @@ Code for sophia-lakeview
 - `python sophia-lakeview/test_project.py --get_xtransforms`
 - `python sophia-lakeview/test_project.py --get_ytransforms`
 - `python sophia-lakeview/test_project.py --get_modelnames --pattern '*'`
-- `python sophia-lakeview/test_project.py --get_data --modelname dplsr__sophia260424-ammonium__vsbl-uv__id`
+- `python sophia-lakeview/test_project.py --get_data --modelname dplsr__sophia260424-ammonium__wr5-vsbl-uv__id`
 
 ---
 
 # CHTC setup: Create submit files
 
 - `cd projworks`
-- `python sophia-lakeview/chtcsetup.py --models_per_submit 2`
+- `python sophia-lakeview/chtcsetup.py --models_per_submit 18`
 
 ---
 
