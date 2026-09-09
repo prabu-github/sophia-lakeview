@@ -3,6 +3,7 @@ import sys
 from typing import List, Dict, Tuple, Union, Callable
 from pathlib import Path
 import numpy as np
+from numpy import ndarray
 import pandas as pd
 from pandas import DataFrame
 import json
@@ -21,7 +22,7 @@ from hytraits import (TabularSpectraDataset,
                       KeepWavelengths,
                       UnitVectorize,
                       fit_fastdplsr,
-                      collate_preds_from_dir)
+                      postfit_org)
 
 
 def get_dataset(comp_dir: Path,
@@ -30,7 +31,7 @@ def get_dataset(comp_dir: Path,
                 trait_col: str,
                 xtransforms: List[H.BaseTransform] = [],
                 ytransforms: List[H.BaseTransform] = [],
-                seed: int = 42) -> H.TABULARDATASET:
+                seed: int = 42) -> H.TabularSpectraDataset:
     if ds_key not in ['sophia260424']:
          raise Exception(f'Invalid {ds_key = }')
         
@@ -57,7 +58,7 @@ def get_dataset(comp_dir: Path,
                                  seed=seed)
 
 
-def get_splits(dataset: TABULARDATASET,
+def get_splits(dataset: TabularSpectraDataset,
                ds_key: str,
                seed: int = 42) -> Splits:
     repeats = (100, 30)
@@ -159,13 +160,13 @@ def get_data(model_name: str,
     return (ds, splits) 
 
 
-def fit_model(model_name: str,
-              comp_dir: Path,
-              model_dir: Path,
-              deploy_dir: Path,
-              oi_start: int,
-              oi_stop: int,
-              seed: int = 42) -> None:
+def project_fit_model(model_name: str,
+                      comp_dir: Path,
+                      model_dir: Path,
+                      deploy_dir: Path,
+                      oi_start: int,
+                      oi_stop: int,
+                      seed: int = 42) -> None:
     print(f'Fitting: {model_name} ...')
     
     dataset, splits = get_data(comp_dir=comp_dir,
@@ -186,11 +187,23 @@ def fit_model(model_name: str,
                   oi_start=oi_start,
                   oi_stop=oi_stop)
 
-    pdf = collate_preds_from_dir(d=deploy_dir/model_name)
-    save_to = deploy_dir/model_name/'preds.csv'
-    pdf.to_csv(save_to, index=None)
-    print(f'Created: {save_to.parent.stem}/{save_to.name}.')
 
-    
 ######################################################
+
+
+def project_postfit_org(model_name: str,
+                        model_dir: Path,
+                        deploy_dir: Path) -> None:
+    postfit_org(model_name=model_name,
+                model_dir=model_dir,
+                deploy_dir=deploy_dir,
+                targz_models=True,
+                targz_deploys=True)
+    
+
+######################################################
+
+
+
+
 
