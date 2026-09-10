@@ -22,6 +22,7 @@ from hytraits import (TabularSpectraDataset,
                       KeepWavelengths,
                       UnitVectorize,
                       fit_fastdplsr,
+                      analyze_univariate_models,
                       postfit_org)
 
 
@@ -118,7 +119,7 @@ def get_modelnames(comp_dir: Path,
         
         xts = get_xtransforms(ds_key=ds_key).keys()
         yts = get_ytransforms(ds_key=ds_key).keys()
-        pieces = [['dplsr'],
+        pieces = [['univar', 'dplsr'],
                   traits,
                   xts,
                   yts]
@@ -191,6 +192,23 @@ def project_fit_model(model_name: str,
 ######################################################
 
 
+def project_analyze_univariate(model_name: str,
+                               comp_dir: Path,
+                               deploy_dir: Path,
+                               seed: int = 42) -> None:
+    print(f'Analyzing: {model_name} ...')
+    
+    dataset, splits = get_data(comp_dir=comp_dir,
+                               model_name=model_name,
+                               seed=seed)
+    analyze_univariate_models(dataset=dataset,
+                              splits=splits,
+                              deploy_dir=deploy_dir/model_name)
+
+
+###################################################### 
+
+
 def project_postfit_org(model_name: str,
                         model_dir: Path,
                         deploy_dir: Path) -> None:
@@ -201,9 +219,5 @@ def project_postfit_org(model_name: str,
                 targz_deploys=True)
     
 
-######################################################
-
-
-
-
+###################################################### 
 
