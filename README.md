@@ -8,7 +8,7 @@ Code for sophia-lakeview
 - `cd projworks`
 - `python sophia-lakeview/datasetup.py --extension csv`
 - `python sophia-lakeview/datasetup.py --extension parquet`
-- CSV is for human readability, parquet is for internal use! 
+- CSV is for humans, parquet is for speed! 
 
 
 ---
@@ -20,13 +20,15 @@ Code for sophia-lakeview
 - `python sophia-lakeview/test_project.py --get_ytransforms`
 - `python sophia-lakeview/test_project.py --get_modelnames --pattern '*'`
 - `python sophia-lakeview/test_project.py --get_data --modelname dplsr__sophia260424-ammonium__wr5-vsbl-uv__id`
+- `python sophia-lakeview/test_project.py --train --modelname dplsr__sophia260424-ammonium__wr5-vsbl-uv__id`
+- `python sophia-lakeview/test_project.py --train --modelname univar__sophia260424-ammonium__wr5-vsbl-uv__id`
 
 ---
 
 # CHTC setup: Create submit files
 
 - `cd projworks`
-- `python sophia-lakeview/chtcsetup.py --models_per_submit 18`
+- `python sophia-lakeview/chtcsetup.py --models_per_submit 1`
 
 ---
 
@@ -60,6 +62,9 @@ Code for sophia-lakeview
 - `cd projworks`
 - `scp sophia-lakeview/assets/chtc_run.sh sophia-lakeview/gendata/forchtc/* pravindran@townsend-ap.chtc.wisc.edu:/home/pravindran/sophia-lakeview`
 
+--- 
+
+# After training
 
 ### staging to local
 - `cd projworks`

@@ -5,12 +5,14 @@ from pprint import pprint
 
 from paths import PATHS
 from project import (get_dataset,
-                      get_splits,
-                      get_xtransforms,
-                      get_ytransforms,
-                      get_modelnames,
-                      get_data,
-                      fit_model)
+                     get_splits,
+                     get_xtransforms,
+                     get_ytransforms,
+                     get_modelnames,
+                     get_data,
+                     project_analyze_univariate,
+                     project_fit_model,
+                     project_postfit_org)
 
 
 if __name__ == '__main__':
@@ -39,7 +41,10 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('--modelname',
                         action='store',
-                        default='dplsr__gerritall-phenolics__all__id')
+                        default='dplsr__sophia260424-TSS__wr5-vsbl-uv__id')
+    parser.add_argument('--train',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--extension',
                         action='store',
                         default='parquet',
@@ -80,4 +85,22 @@ if __name__ == '__main__':
         d = dataset[0]
         print(f'{d["wave_ranges"] = }')
         print(f'{d["wavelengths"] = }')
-    
+
+    if args.train:
+        if 'univar' in args.modelname:
+            project_analyze_univariate(model_name=args.modelname,
+                                       comp_dir=PATHS['compdata'],
+                                       deploy_dir=PATHS['deploy'],
+                                       seed=42)
+        else:
+            project_fit_model(model_name=args.modelname,
+                              comp_dir=PATHS['compdata'],
+                              model_dir=PATHS['model'],
+                              deploy_dir=PATHS['deploy'],
+                              oi_start=None,
+                              oi_stop=None,
+                              seed=42) 
+            project_postfit_org(model_name=args.modelname,
+                                model_dir=PATHS['model'],
+                                deploy_dir=PATHS['deploy'])
+        
