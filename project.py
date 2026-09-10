@@ -194,6 +194,7 @@ def project_fit_model(model_name: str,
 
 def project_analyze_univariate(model_name: str,
                                comp_dir: Path,
+                               model_dir: Path,
                                deploy_dir: Path,
                                seed: int = 42) -> None:
     print(f'Analyzing: {model_name} ...')
@@ -203,6 +204,7 @@ def project_analyze_univariate(model_name: str,
                                seed=seed)
     analyze_univariate_models(dataset=dataset,
                               splits=splits,
+                              model_dir=model_dir/model_name,
                               deploy_dir=deploy_dir/model_name)
 
 

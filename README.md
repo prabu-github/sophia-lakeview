@@ -60,7 +60,7 @@ Code for sophia-lakeview
 
 ### local to submit
 - `cd projworks`
-- `scp sophia-lakeview/assets/chtc_run.sh sophia-lakeview/gendata/forchtc/* pravindran@townsend-ap.chtc.wisc.edu:/home/pravindran/sophia-lakeview`
+- `scp sophia-lakeview/gendata/forchtc/* pravindran@townsend-ap.chtc.wisc.edu:/home/pravindran/sophia-lakeview`
 
 --- 
 

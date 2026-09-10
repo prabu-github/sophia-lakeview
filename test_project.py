@@ -90,6 +90,7 @@ if __name__ == '__main__':
         if 'univar' in args.modelname:
             project_analyze_univariate(model_name=args.modelname,
                                        comp_dir=PATHS['compdata'],
+                                       model_dir=PATHS['model'],
                                        deploy_dir=PATHS['deploy'],
                                        seed=42)
         else:
